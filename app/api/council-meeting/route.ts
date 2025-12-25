@@ -3,11 +3,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Gemini directly (Bypassing Genkit path issues on Windows)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
+// Use gemini-pro as it is more stable than 1.5-flash for this key type
 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 export async function POST(req: Request) {
+    let body: any = {}; // Define body in function scope
+
     try {
-        const body = await req.json();
+        body = await req.json();
 
         // 1. Define Persona Prompts
         const optimistPrompt = "You are 'The Optimist', a sales-driven loan officer. Your goal is to APPROVE this loan. Find every possible reason to say YES. Focus on: Potential income growth, stability, asset creation. Ignore the risks or downplay them. User Data: " + JSON.stringify(body) + ". Write a short, punchy argument (2-3 sentences) supporting this user. Output purely the argument text.";
@@ -53,7 +56,12 @@ export async function POST(req: Request) {
         console.error("Council Flow Error (Falling back to Simulation):", error);
 
         // Fallback Simulation to ensure non-empty UI
-        const isGoodProfile = (body.monthlyIncome > 40000) && (body.creditScore > 700);
+        // Uses body if available, otherwise defaults to safe values
+        const monthlyIncome = body?.monthlyIncome || 0;
+        const creditScore = body?.creditScore || 0;
+
+        const isGoodProfile = (monthlyIncome > 40000) && (creditScore > 700);
+
         return NextResponse.json({
             optimistArgument: isGoodProfile
                 ? "This applicant is a prime candidate! Strong income stability and excellent credit history suggest zero default risk."
