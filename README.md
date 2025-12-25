@@ -72,8 +72,20 @@ We leverage the **Web Speech API** to create a hands-free banking experience.
 -   **Voice Navigation:** Users can jump between modules just by saying *"Open Document Checklist"* or *"Show me the Loan Comparison"*.
 
 ### � Intelligent Agents
--   **Loan Officer:** It doesn’t just show a table of loans. It analyzes your *Credit Score + Income - Obligations* to recommend the single best offer (marked with an "AI Recommended" ribbon).
--   **Rejection Recovery:** If a user doesn't qualify, this agent steps in. It simulates "What-If" scenarios (e.g., increasing tenure, reducing loan amount) to find a passing combination.
+### 4. "The Financial Council" (Multi-Agent System) 🏛️
+**Pattern: Reflection & Debate**
+*   **The Optimist Agent:** Analyzes your profile to find "Hidden Gems" (e.g., potential income growth).
+*   **The Pessimist Agent:** Ruthlessly finds risks (e.g., hidden liabilities).
+*   **The Judge Agent:** Listens to both arguments and delivers a final, unbiased verdict in real-time.
+*   **Why Method works:** Prevents "Hallucinations" by forcing the AI to critique its own findings before deciding.
+
+### 5. "The Rejection Recovery Squad" (Autonomous Pipeline) 📉➡️📈
+**Pattern: Chain of Thought & Handoffs**
+If you are rejected, a **Team of 3 Autonomous Agents** activates in the background:
+1.  🕵️ **The Investigator:** Digs through data to find the *exact* root cause (e.g., "Missed Payment in 2022").
+2.  🐺 **The Negotiator:** Takes the Investigator's report and drafts a legal dispute letter or negotiation script.
+3.  🏗️ **The Wealth Architect:** Takes the Negotiator's output and builds a day-by-day "Calendar" to fix the credit score.
+*   **Key Tech:** Agents pass JSON objects to each other to maintain context.
 
 ### 📲 Real-Time Updates (Twilio)
 -   **WhatsApp Integration:** Users receive instant notifications for:
