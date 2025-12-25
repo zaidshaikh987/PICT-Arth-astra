@@ -3,8 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Gemini directly (Bypassing Genkit path issues on Windows)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
-// Use gemini-pro as it is more stable than 1.5-flash for this key type
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+// Use gemini-1.5-flash as requested by user
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export async function POST(req: Request) {
     let body: any = {}; // Define body in function scope
