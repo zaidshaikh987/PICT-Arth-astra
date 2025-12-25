@@ -19,6 +19,7 @@ import Link from "next/link"
 import { useVoiceAssistant } from "@/lib/voice-assistant-context"
 import { DashboardHero } from "@/components/dashboard/dashboard-hero"
 import { FinancialHealthChart } from "@/components/dashboard/financial-chart"
+import CouncilVisualizer from "@/components/dashboard/council-visualizer"
 
 export default function DashboardOverview() {
   const [userData, setUserData] = useState<any>(null)
@@ -59,6 +60,11 @@ export default function DashboardOverview() {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* 1. Hero Section (New) */}
       <DashboardHero userData={userData} />
+
+      {/* 1.5 Financial Council (Genkit) */}
+      <div className="mb-6">
+        <CouncilVisualizer userData={userData} />
+      </div>
 
       {/* 2. Key Metrics Grid (Refined) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
