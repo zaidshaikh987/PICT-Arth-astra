@@ -150,7 +150,7 @@ export default function RejectionRecovery() {
                 <div>
                   <p className="text-xs text-gray-500">Script Generated</p>
                   <p className="text-xs font-mono bg-gray-50 p-2 rounded text-gray-600 mt-1">
-                    "{strategy.negotiationScript.substring(0, 100)}..."
+                    "{(strategy.negotiationScript || "").substring(0, 100)}..."
                   </p>
                 </div>
               </div>
