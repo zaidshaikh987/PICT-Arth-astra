@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/language-context"
 type Message = {
   role: "user" | "assistant"
   content: string
+  agent?: string
 }
 
 export default function GlobalChatbot() {
@@ -48,7 +49,7 @@ export default function GlobalChatbot() {
       try {
         const data = localStorage.getItem("onboardingData")
         if (data) userContext = JSON.parse(data)
-      } catch (e) {}
+      } catch (e) { }
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -61,8 +62,9 @@ export default function GlobalChatbot() {
 
       const data = await response.json()
       const assistantMessage = data.error || data.response
+      const agentName = data.agent || "GENERAL"
 
-      setMessages((prev) => [...prev, { role: "assistant", content: assistantMessage }])
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantMessage, agent: agentName }])
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -89,9 +91,8 @@ export default function GlobalChatbot() {
     <>
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all ${
-          isOpen ? "scale-0" : "scale-100"
-        }`}
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all ${isOpen ? "scale-0" : "scale-100"
+          }`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -146,13 +147,22 @@ export default function GlobalChatbot() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${
-                      message.role === "user"
-                        ? "bg-emerald-600 text-white rounded-br-md"
-                        : "bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md"
-                    }`}
+                    className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${message.role === "user"
+                      ? "bg-emerald-600 text-white rounded-br-md"
+                      : "bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md"
+                      }`}
                   >
                     {message.content}
+                    {message.role === "assistant" && message.agent && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${message.agent === "GENERAL"
+                            ? "bg-gray-100 text-gray-600 border-gray-200"
+                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                          }`}>
+                          {message.agent.replace("_", " ")} AGENT
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}

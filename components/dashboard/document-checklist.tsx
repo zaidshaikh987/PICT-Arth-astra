@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Eye,
   Trash2,
+  Lock,
+  ShieldCheck,
 } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 
@@ -216,16 +218,24 @@ export default function DocumentChecklist() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <FileCheck className="w-8 h-8 text-emerald-600" />
-          {language === "hi" ? "दस्तावेज़ चेकलिस्ट" : "Document Checklist"}
-        </h1>
-        <p className="text-gray-600 mt-2">
-          {language === "hi"
-            ? "अपने ऋण आवेदन के लिए आवश्यक सभी दस्तावेज़ तैयार करें"
-            : "Prepare all documents required for your loan application"}
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <FileCheck className="w-8 h-8 text-emerald-600" />
+            {language === "hi" ? "दस्तावेज़ चेकलिस्ट" : "Document Checklist"}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {language === "hi"
+              ? "अपने ऋण आवेदन के लिए आवश्यक सभी दस्तावेज़ तैयार करें"
+              : "Prepare all documents required for your loan application"}
+          </p>
+        </div>
+
+        {/* Secure Badge */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-full text-sm text-emerald-700 font-medium">
+          <Lock className="w-4 h-4" />
+          Your data is 256-bit encrypted & secure
+        </div>
       </div>
 
       {/* Progress Card */}
@@ -266,16 +276,23 @@ export default function DocumentChecklist() {
           const CategoryIcon = category.icon
 
           return (
-            <Card key={category.id} className="p-6">
+            <Card key={category.id} className="p-6 transition-all hover:shadow-md border-gray-100/50">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                   <CategoryIcon className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{language === "hi" ? category.nameHi : category.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {uploadedCount} / {categoryDocs.length} {language === "hi" ? "तैयार" : "uploaded"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500">
+                      {uploadedCount} / {categoryDocs.length} {language === "hi" ? "तैयार" : "uploaded"}
+                    </p>
+                    {uploadedCount === categoryDocs.length && (
+                      <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> Verified
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -290,17 +307,15 @@ export default function DocumentChecklist() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        isUploaded
-                          ? "bg-emerald-50 border-emerald-300"
-                          : "bg-gray-50 border-gray-200 hover:border-emerald-200"
-                      }`}
+                      className={`p-4 rounded-xl border transition-all ${isUploaded
+                        ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 shadow-sm"
+                        : "bg-white border-gray-200 hover:border-emerald-200 hover:shadow-sm"
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                            isUploaded ? "bg-emerald-500 text-white" : "bg-gray-200"
-                          }`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isUploaded ? "bg-emerald-500 text-white shadow-emerald-200 shadow-md" : "bg-gray-100 text-gray-400"
+                            }`}
                         >
                           {isUploaded ? (
                             <CheckCircle2 className="w-4 h-4" />

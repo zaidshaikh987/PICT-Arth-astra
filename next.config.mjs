@@ -6,7 +6,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
- 
+
 }
 
+
+// Forced Reload
 export default nextConfig

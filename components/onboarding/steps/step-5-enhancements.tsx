@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { OnboardingData } from "../onboarding-wizard"
+import type { OnboardingData } from "../types"
 import { CheckCircle2 } from "lucide-react"
 import { useState } from "react"
 

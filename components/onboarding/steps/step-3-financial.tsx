@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { OnboardingData } from "../onboarding-wizard"
+import type { OnboardingData } from "../types"
 import { ArrowRight } from "lucide-react"
 
 interface Props {

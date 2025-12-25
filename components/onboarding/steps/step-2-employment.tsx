@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { OnboardingData } from "../onboarding-wizard"
+import type { OnboardingData } from "../types"
 import { ArrowRight, Briefcase, Building, Laptop, GraduationCap } from "lucide-react"
 
 interface Props {
@@ -69,21 +69,18 @@ export default function Step2Employment({ data, updateData, onNext }: Props) {
                 key={type.value}
                 type="button"
                 onClick={() => updateData({ employmentType: type.value })}
-                className={`p-4 border-2 rounded-xl transition-all ${
-                  data.employmentType === type.value
+                className={`p-4 border-2 rounded-xl transition-all ${data.employmentType === type.value
                     ? "border-emerald-500 bg-emerald-50 shadow-md"
                     : "border-gray-200 hover:border-emerald-200 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <type.icon
-                  className={`w-8 h-8 mx-auto mb-2 ${
-                    data.employmentType === type.value ? "text-emerald-600" : "text-gray-400"
-                  }`}
+                  className={`w-8 h-8 mx-auto mb-2 ${data.employmentType === type.value ? "text-emerald-600" : "text-gray-400"
+                    }`}
                 />
                 <span
-                  className={`text-sm font-medium ${
-                    data.employmentType === type.value ? "text-emerald-700" : "text-gray-700"
-                  }`}
+                  className={`text-sm font-medium ${data.employmentType === type.value ? "text-emerald-700" : "text-gray-700"
+                    }`}
                 >
                   {type.label}
                 </span>

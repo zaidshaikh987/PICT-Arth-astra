@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useVoiceAssistant } from "@/lib/voice-assistant-context"
+import { DashboardHero } from "@/components/dashboard/dashboard-hero"
+import { FinancialHealthChart } from "@/components/dashboard/financial-chart"
 
 export default function DashboardOverview() {
   const [userData, setUserData] = useState<any>(null)
@@ -28,8 +30,12 @@ export default function DashboardOverview() {
     if (data) {
       const parsedData = JSON.parse(data)
 
+      // Load uploaded files count
+      const filesStr = localStorage.getItem("uploadedFiles") || "[]"
+      const filesCount = JSON.parse(filesStr).length
+
       // Calculate eligibility and scores
-      const calculations = calculateEligibility(parsedData)
+      const calculations = calculateEligibility(parsedData, filesCount)
       setUserData({ ...parsedData, ...calculations })
     }
   }, [])
@@ -47,150 +53,120 @@ export default function DashboardOverview() {
     )
   }
 
+
+
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {userData.name?.split(" ")[0]}! 👋</h1>
-          <p className="text-gray-600">Here's your loan readiness overview</p>
-        </div>
-        <Button
-          onClick={handleVoiceGuide}
-          className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
-        >
-          <Volume2 className="w-4 h-4 mr-2" />
-          Voice Guide
-        </Button>
-      </div>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* 1. Hero Section (New) */}
+      <DashboardHero userData={userData} />
 
-      {/* Top Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Credit Readiness Score */}
-        <Card className="p-6 border-2 border-emerald-100">
-          <div className="flex items-center justify-between mb-4">
-            <Target className="w-8 h-8 text-emerald-600" />
-            <span className="text-sm font-medium text-gray-600">Credit Readiness</span>
-          </div>
-          <div className="mb-3">
-            <div className="text-4xl font-bold text-emerald-600 mb-1">{userData.creditReadinessScore}/100</div>
-            <Progress value={userData.creditReadinessScore} className="h-2" />
-          </div>
-          <p className="text-sm text-gray-600">{getScoreLabel(userData.creditReadinessScore)}</p>
-        </Card>
+      {/* 2. Key Metrics Grid (Refined) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* Eligibility Status */}
-        <Card className="p-6 border-2 border-teal-100">
-          <div className="flex items-center justify-between mb-4">
-            <CheckCircle2 className="w-8 h-8 text-teal-600" />
-            <span className="text-sm font-medium text-gray-600">Eligibility</span>
+        {/* Financial Chart (New) - Linked to Eligibility */}
+        <Link href="/dashboard/eligibility" className="md:col-span-1 block group">
+          <div className="h-full transition-transform group-hover:scale-[1.02]">
+            <FinancialHealthChart userData={userData} />
           </div>
-          <div className="mb-3">
-            <div className={`text-lg font-bold mb-1 ${userData.isEligible ? "text-green-600" : "text-orange-600"}`}>
-              {userData.isEligible ? "Eligible" : "Partially Eligible"}
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              ₹{(userData.maxEligibleAmount || 0).toLocaleString("en-IN")}
-            </div>
-          </div>
-          <p className="text-sm text-gray-600">Max eligible amount</p>
-        </Card>
+        </Link>
 
-        {/* Recommended Action */}
-        <Card className="p-6 border-2 border-cyan-100">
-          <div className="flex items-center justify-between mb-4">
-            <Sparkles className="w-8 h-8 text-cyan-600" />
-            <span className="text-sm font-medium text-gray-600">Next Step</span>
-          </div>
-          <div className="mb-3">
-            <div className="text-lg font-bold text-cyan-700 mb-2">{userData.nextAction}</div>
-          </div>
-          <Link href={userData.actionLink}>
-            <Button size="sm" className="w-full bg-cyan-600 hover:bg-cyan-700">
-              Take Action
-            </Button>
+        {/* Metrics Cards (Softened) */}
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Eligibility Status */}
+          <Link href="/dashboard/eligibility" className="block group">
+            <Card className="p-6 h-full shadow-md border-teal-50 bg-gradient-to-br from-white to-teal-50/50 transition-all group-hover:shadow-lg group-hover:border-teal-200 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 bg-teal-100 rounded-lg group-hover:bg-teal-200 transition-colors">
+                  <CheckCircle2 className="w-6 h-6 text-teal-600" />
+                </div>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full ${userData.isEligible ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                  {userData.isEligible ? "ELIGIBLE" : "REVIEW NEEDED"}
+                </span>
+              </div>
+              <div className="mb-2">
+                <p className="text-sm text-gray-500 mb-1">Max Eligible Amount</p>
+                <div className="text-3xl font-bold text-gray-900 tracking-tight">
+                  ₹{(userData.maxEligibleAmount || 0).toLocaleString("en-IN")}
+                </div>
+              </div>
+            </Card>
           </Link>
-        </Card>
 
-        {/* Document Readiness */}
-        <Card className="p-6 border-2 border-blue-100">
-          <div className="flex items-center justify-between mb-4">
-            <FileCheck className="w-8 h-8 text-blue-600" />
-            <span className="text-sm font-medium text-gray-600">Documents</span>
-          </div>
-          <div className="mb-3">
-            <div className="text-4xl font-bold text-blue-600 mb-1">{userData.documentReadiness}%</div>
-            <Progress value={userData.documentReadiness} className="h-2" />
-          </div>
-          <p className="text-sm text-gray-600">{5 - Math.floor(userData.documentReadiness / 20)} documents missing</p>
-        </Card>
+          {/* Document Readiness */}
+          <Link href="/dashboard/documents" className="block group">
+            <Card className="p-6 h-full shadow-md border-blue-50 bg-gradient-to-br from-white to-blue-50/50 transition-all group-hover:shadow-lg group-hover:border-blue-200 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                  <FileCheck className="w-6 h-6 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-blue-600">{userData.documentReadiness}% Ready</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Documentation Status</p>
+                <Progress value={userData.documentReadiness} className="h-2 bg-blue-100" />
+                <p className="text-xs text-gray-400 mt-2 text-right">{5 - Math.floor(userData.documentReadiness / 20)} docs pending</p>
+              </div>
+            </Card>
+          </Link>
+
+          {/* Recommended Action */}
+          <Card className="p-6 shadow-md border-cyan-50 bg-gradient-to-br from-white to-cyan-50/50 sm:col-span-2">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-100 rounded-full">
+                <Sparkles className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-900">AI Recommendation</h4>
+                <p className="text-sm text-gray-600">{userData.nextAction}</p>
+              </div>
+              <Link href={userData.actionLink}>
+                <Button className="bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-200">
+                  Take Action
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Quick Actions Panel */}
-      <Card className="p-6 mb-8">
+      <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/dashboard/optimizer">
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto p-4 border-2 hover:border-emerald-500 bg-transparent"
-            >
-              <div className="text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  <Target className="w-5 h-5 text-emerald-600" />
-                  <span className="font-semibold">Optimize Path</span>
-                </div>
-                <p className="text-xs text-gray-600">Simulate scenarios</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Optimizer Card */}
+          <Link href="/dashboard/optimizer" className="block group">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-sm hover:shadow-md transition-all group-hover:scale-[1.02]">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
+                <Target className="w-6 h-6 text-emerald-600" />
               </div>
-            </Button>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Optimize Path</h3>
+              <p className="text-sm text-gray-600">Simulate scenarios to improve eligibility</p>
+            </div>
           </Link>
 
-          <Link href="/dashboard/timeline">
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto p-4 border-2 hover:border-teal-500 bg-transparent"
-            >
-              <div className="text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-5 h-5 text-teal-600" />
-                  <span className="font-semibold">Best Timing</span>
-                </div>
-                <p className="text-xs text-gray-600">When to apply</p>
+          {/* Timing Card */}
+          <Link href="/dashboard/timeline" className="block group">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100 shadow-sm hover:shadow-md transition-all group-hover:scale-[1.02]">
+              <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
+                <Calendar className="w-6 h-6 text-violet-600" />
               </div>
-            </Button>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Best Timing</h3>
+              <p className="text-sm text-gray-600">Know exactly when to apply for success</p>
+            </div>
           </Link>
 
-          <Link href="/dashboard/loans">
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto p-4 border-2 hover:border-cyan-500 bg-transparent"
-            >
-              <div className="text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-5 h-5 text-cyan-600" />
-                  <span className="font-semibold">Compare Loans</span>
-                </div>
-                <p className="text-xs text-gray-600">Find best options</p>
+          {/* Documents Card */}
+          <Link href="/dashboard/documents" className="block group">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm hover:shadow-md transition-all group-hover:scale-[1.02]">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                <FileCheck className="w-6 h-6 text-blue-600" />
               </div>
-            </Button>
-          </Link>
-
-          <Link href="/dashboard/chat">
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto p-4 border-2 hover:border-blue-500 bg-transparent"
-            >
-              <div className="text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold">AI Assistant</span>
-                </div>
-                <p className="text-xs text-gray-600">Get guidance</p>
-              </div>
-            </Button>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Document Checklist</h3>
+              <p className="text-sm text-gray-600">Upload and verify your application docs</p>
+            </div>
           </Link>
         </div>
-      </Card>
+      </div>
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -260,11 +236,12 @@ export default function DashboardOverview() {
 }
 
 // Helper Functions
-function calculateEligibility(data: any) {
+function calculateEligibility(data: any, filesCount: number = 0) {
   const monthlyIncome = data.monthlyIncome || 30000
   const existingEMI = data.existingEMI || 0
   const loanAmount = data.loanAmount || 100000
   const tenure = data.tenure || 3
+  const creditScore = data.creditScore || 650
 
   // DTI Calculation
   const dti = (existingEMI / monthlyIncome) * 100
@@ -282,22 +259,53 @@ function calculateEligibility(data: any) {
 
   const isEligible = dti <= dtiThreshold && monthlyIncome >= 25000
 
+  // Document Readiness (Real)
+  // Assuming 5 key documents: ID, Address, Income, Bank, Property/Other
+  const documentReadiness = Math.min(100, Math.round((filesCount / 5) * 100))
+
   // Credit Readiness Score
   const financialLoad = Math.max(0, 30 - dti * 0.6)
   const incomeStability = getIncomeStabilityScore(data.employmentType, data.employmentTenure)
-  const creditBehavior = data.hasCreditHistory ? (data.creditScore >= 750 ? 20 : 15) : 5
-  const documentReadiness = 12 // Base score
+  const creditBehavior = data.hasCreditHistory ? (creditScore >= 750 ? 20 : 15) : 5
+  // Contribution of docs to readiness: Max 15 points
+  const docScoreContribution = Math.round((documentReadiness / 100) * 15)
   const timingScore = 5
 
   const creditReadinessScore = Math.round(
-    financialLoad + incomeStability + creditBehavior + documentReadiness + timingScore,
+    financialLoad + incomeStability + creditBehavior + docScoreContribution + timingScore,
   )
 
-  // Recommendations
+  // Dynamic Recommendations based on Credit Score
+  let baseRate = 12.0
+  let baseOdds = 60
+
+  if (creditScore >= 750) { baseRate = 10.5; baseOdds = 90 }
+  else if (creditScore >= 700) { baseRate = 11.5; baseOdds = 75 }
+  else if (creditScore >= 650) { baseRate = 13.5; baseOdds = 50 }
+  else { baseRate = 15.0; baseOdds = 30 }
+
   const recommendations = [
-    { bankName: "HDFC Bank", productName: "Personal Loan", rate: 10.5, emi: 8200, approvalOdds: 85 },
-    { bankName: "ICICI Bank", productName: "Express Loan", rate: 11.0, emi: 8350, approvalOdds: 80 },
-    { bankName: "Axis Bank", productName: "Quick Loan", rate: 10.8, emi: 8290, approvalOdds: 82 },
+    {
+      bankName: "HDFC Bank",
+      productName: "Personal Loan",
+      rate: baseRate,
+      emi: Math.round(loanAmount * (baseRate / 1200) / (1 - Math.pow(1 + baseRate / 1200, -tenure * 12))),
+      approvalOdds: baseOdds
+    },
+    {
+      bankName: "ICICI Bank",
+      productName: "Express Loan",
+      rate: baseRate + 0.5,
+      emi: Math.round(loanAmount * ((baseRate + 0.5) / 1200) / (1 - Math.pow(1 + (baseRate + 0.5) / 1200, -tenure * 12))),
+      approvalOdds: Math.max(0, baseOdds - 5)
+    },
+    {
+      bankName: "Axis Bank",
+      productName: "Quick Loan",
+      rate: baseRate + 0.3,
+      emi: Math.round(loanAmount * ((baseRate + 0.3) / 1200) / (1 - Math.pow(1 + (baseRate + 0.3) / 1200, -tenure * 12))),
+      approvalOdds: Math.max(0, baseOdds - 3)
+    },
   ]
 
   return {
@@ -306,7 +314,7 @@ function calculateEligibility(data: any) {
     creditReadinessScore,
     nextAction: isEligible ? "Compare Loans" : "Improve Profile",
     actionLink: isEligible ? "/dashboard/loans" : "/dashboard/optimizer",
-    documentReadiness: 60,
+    documentReadiness,
     recommendations,
   }
 }

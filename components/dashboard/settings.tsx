@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Bell, Lock, CreditCard, Mail, Phone, MapPin } from "lucide-react"
+import { User, Bell, Lock, CreditCard, Mail, Phone, MapPin, MessageSquare } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
@@ -222,7 +222,40 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!userData?.phone) {
+                      alert("No phone number found in profile.")
+                      return
+                    }
+                    if (confirm(`Send test WhatsApp message to ${userData.phone}?`)) {
+                      try {
+                        const res = await fetch("/api/notify", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            stage: "profile_setup",
+                            userData: { ...userData, name: "Test User" }
+                          })
+                        })
+                        const data = await res.json()
+                        if (data.success) {
+                          alert("Success! Message sent. SID: " + data.sid)
+                        } else {
+                          alert("Failed: " + (data.error || JSON.stringify(data)))
+                        }
+                      } catch (e: any) {
+                        alert("Error: " + e.message)
+                      }
+                    }
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Test WhatsApp
+                </Button>
+
                 <Button onClick={handleSaveNotifications} className="bg-emerald-600 hover:bg-emerald-700">
                   Save Preferences
                 </Button>
@@ -282,11 +315,25 @@ export default function SettingsPage() {
               </div>
 
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <h4 className="font-semibold text-red-900 mb-2">Delete Account</h4>
+                <h4 className="font-semibold text-red-900 mb-2">Delete Account & Data</h4>
                 <p className="text-sm text-red-700 mb-3">
-                  Permanently delete your account and all associated data. This action cannot be undone.
+                  This will PERMANENTLY delete all your data and log you out. This action cannot be undone.
                 </p>
-                <Button variant="destructive">Delete Account</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to reset?")) {
+                      localStorage.removeItem("onboardingData")
+                      localStorage.removeItem("loanProfile")
+                      localStorage.removeItem("onboardingStep")
+                      localStorage.removeItem("timelineSimulation")
+                      localStorage.removeItem("uploadedFiles")
+                      window.location.href = "/"
+                    }
+                  }}
+                >
+                  Reset & Logout
+                </Button>
               </div>
             </div>
           </Card>

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import type { OnboardingData } from "../onboarding-wizard"
+import type { OnboardingData } from "../types"
 import { ArrowRight, GraduationCap, User, Briefcase, Home, Car, Heart, Users, Plane } from "lucide-react"
 
 interface Props {
@@ -70,21 +70,18 @@ export default function Step4LoanRequirement({ data, updateData, onNext }: Props
                 key={purpose.value}
                 type="button"
                 onClick={() => updateData({ loanPurpose: purpose.value })}
-                className={`p-4 border-2 rounded-xl transition-all ${
-                  data.loanPurpose === purpose.value
+                className={`p-4 border-2 rounded-xl transition-all ${data.loanPurpose === purpose.value
                     ? "border-emerald-500 bg-emerald-50 shadow-md"
                     : "border-gray-200 hover:border-emerald-200 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <purpose.icon
-                  className={`w-6 h-6 mx-auto mb-2 ${
-                    data.loanPurpose === purpose.value ? "text-emerald-600" : "text-gray-400"
-                  }`}
+                  className={`w-6 h-6 mx-auto mb-2 ${data.loanPurpose === purpose.value ? "text-emerald-600" : "text-gray-400"
+                    }`}
                 />
                 <span
-                  className={`text-xs font-medium ${
-                    data.loanPurpose === purpose.value ? "text-emerald-700" : "text-gray-700"
-                  }`}
+                  className={`text-xs font-medium ${data.loanPurpose === purpose.value ? "text-emerald-700" : "text-gray-700"
+                    }`}
                 >
                   {purpose.label}
                 </span>
@@ -140,11 +137,10 @@ export default function Step4LoanRequirement({ data, updateData, onNext }: Props
                 key={years}
                 type="button"
                 onClick={() => updateData({ tenure: years })}
-                className={`py-3 px-4 border-2 rounded-lg font-semibold transition-all ${
-                  data.tenure === years
+                className={`py-3 px-4 border-2 rounded-lg font-semibold transition-all ${data.tenure === years
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-200 hover:border-emerald-200 text-gray-700"
-                }`}
+                  }`}
               >
                 {years} {years === 1 ? "yr" : "yrs"}
               </button>

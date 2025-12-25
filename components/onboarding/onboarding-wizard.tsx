@@ -19,29 +19,7 @@ const onboardingImages = [
   "/indian-businessman-reviewing-loan-documents.jpg",
 ]
 
-export type OnboardingData = {
-  name?: string
-  age?: number
-  city?: string
-  state?: string
-  language?: string
-  employmentType?: string
-  monthlyIncome?: number
-  employmentTenure?: string
-  companyName?: string
-  existingEMI?: number
-  monthlyExpenses?: number
-  savingsRange?: string
-  hasCreditHistory?: boolean
-  creditScore?: number
-  loanPurpose?: string
-  loanAmount?: number
-  preferredEMI?: number
-  tenure?: number
-  isJointApplication?: boolean
-  coborrowerIncome?: number
-  coborrowerRelationship?: string
-}
+import type { OnboardingData } from "./types"
 
 const stepFields = {
   1: [
@@ -58,6 +36,12 @@ const stepFields = {
       question: { en: "How old are you?", hi: "आपकी उम्र क्या है?" },
       min: 18,
       max: 100,
+    },
+    {
+      id: "phone",
+      name: "Phone Number",
+      type: "text" as const,
+      question: { en: "What is your phone number?", hi: "आपका फोन नंबर क्या है?" },
     },
     {
       id: "city",
@@ -344,6 +328,10 @@ export default function OnboardingWizard() {
   const handleSave = () => {
     localStorage.setItem("onboardingData", JSON.stringify(formData))
     localStorage.setItem("onboardingStep", currentStep.toString())
+    // Ensure session is active if they are deep in the process
+    if (currentStep > 1) {
+      localStorage.setItem("arthAstraSession", "true")
+    }
     alert("Progress saved! You can continue later.")
   }
 
@@ -396,9 +384,8 @@ export default function OnboardingWizard() {
                 {onboardingImages.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === currentImage ? "bg-white w-6" : "bg-white/50"
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-all ${idx === currentImage ? "bg-white w-6" : "bg-white/50"
+                      }`}
                   />
                 ))}
               </div>
@@ -413,9 +400,8 @@ export default function OnboardingWizard() {
             <div className="mt-6 p-5 bg-white rounded-xl shadow-md border border-gray-100">
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    isFormMode ? "bg-emerald-500" : "bg-gradient-to-br from-emerald-100 to-teal-100"
-                  }`}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isFormMode ? "bg-emerald-500" : "bg-gradient-to-br from-emerald-100 to-teal-100"
+                    }`}
                 >
                   {isFormMode ? (
                     <Volume2 className="w-6 h-6 text-white animate-pulse" />

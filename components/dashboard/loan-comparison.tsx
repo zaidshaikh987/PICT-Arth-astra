@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, CheckCircle2, Clock, Building2, Percent, Sparkles, ArrowRight } from "lucide-react"
+import { TrendingUp, CheckCircle2, Clock, Building2, Percent, Sparkles, ArrowRight, Crown } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { useLanguage } from "@/lib/language-context"
 import { getTranslation } from "@/lib/i18n"
@@ -48,13 +48,12 @@ export default function LoanComparison() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                filter === f
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${filter === f
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
-              {getTranslation(language, f === "all" ? "allOffers" : f)}
+              {getTranslation(language, (f === "all" ? "allOffers" : f) as any)}
             </button>
           ))}
         </div>
@@ -74,15 +73,20 @@ export default function LoanComparison() {
         {filteredLoans.map((loan, index) => (
           <Card
             key={index}
-            className={`overflow-hidden transition-all duration-300 hover:shadow-xl ${
-              loan.isRecommended ? "ring-2 ring-emerald-500 shadow-lg" : "border border-gray-200"
-            }`}
+            className={`overflow-hidden transition-all duration-300 hover:shadow-xl ${loan.isRecommended ? "ring-2 ring-emerald-500 shadow-lg" : "border border-gray-200"
+              }`}
           >
             {loan.isRecommended && (
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2">
-                <div className="flex items-center gap-2 text-white text-sm font-semibold">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {getTranslation(language, "bestMatch")}
+              <div className="bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/20 blur-xl"></div>
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white text-sm font-bold tracking-wide">
+                    <Crown className="w-4 h-4 fill-white" />
+                    AI RECOMMENDED CHOICE
+                  </div>
+                  <span className="text-white/90 text-xs font-medium bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    Highest Approval Odds
+                  </span>
                 </div>
               </div>
             )}

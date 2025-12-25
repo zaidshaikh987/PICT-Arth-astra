@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai"
+import { OrchestratorAgent } from "@/lib/agents/core/orchestrator"
 
 export const maxDuration = 30
 
@@ -6,46 +7,69 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 })
 
+const AGENT_PERSONAS = {
+  ONBOARDING: `You are the Onboarding Assistant. Your goal is to welcome the user and help them complete their profile. Be warm, encouraging, and ask one question at a time.`,
+
+  LOAN_OFFICER: `You are the Senior Loan Officer & Eligibility Analyst. You specialize in analyzing loan eligibility, bank policies, interest rates, and calculating EMIs.`,
+
+  RECOVERY: `You are the Credit Rehabilitation Specialist. 
+  1. Start by identifying yourself.
+  2. If the user's Credit Score is known (from analysis), acknowledge it (e.g., "I see your score is 810").
+  3. If you don't know the specific rejection reason (e.g. "Low DTI", "Policy"), ask for it to tailor the plan.
+  4. Be empathetic but very proactive.`,
+
+  GENERAL: `You are ArthAstra, a helpful financial guide. Answer general queries politely.`
+}
+
 export async function POST(req: Request) {
   try {
     const { messages, language = "en" } = await req.json()
     const lastMessage = messages[messages.length - 1]
     const context = lastMessage.context
 
-    const systemPrompt = `You are ArthAstra Assistant, an expert Indian loan advisor. You provide personalized guidance for loan seekers in India.
+    // 1. Run Orchestrator to decide intent
+    const orchestrator = new OrchestratorAgent()
+    const routingResult = await orchestrator.routeRequest(lastMessage.content, messages.slice(0, -1))
 
-LANGUAGE PREFERENCE: ${language === "hi" ? "Respond in Hindi (Devanagari script). Use simple, conversational Hindi." : "Respond in English with occasional Hindi terms where helpful."}
+    const selectedAgent = routingResult.data?.selectedAgent || "GENERAL"
+    const specificPersona = AGENT_PERSONAS[selectedAgent as keyof typeof AGENT_PERSONAS] || AGENT_PERSONAS.GENERAL
 
-CORE EXPERTISE:
-- Loan eligibility assessment (income, DTI, credit scores, CIBIL)
-- EMI calculations and loan structuring
-- Credit improvement strategies for Indian consumers
-- Joint application benefits and co-borrower analysis
-- Lender comparison (HDFC, ICICI, Axis, SBI, Kotak, etc.)
-- Document preparation for Indian loan applications
-- Interest rate negotiation tactics
-- Indian banking regulations and RBI guidelines
-- Rejection recovery strategies
-- Multi-goal loan planning
+    console.log(`[Chat] Routed to: ${selectedAgent}`)
 
-CONTEXT AWARENESS:
-${context ? `User Profile: ${JSON.stringify(context)}` : "No user profile available yet."}
+    // 2. Execute Specialist Agent if applicable
+    let agentContext = ""
 
-RESPONSE GUIDELINES:
-1. Always use Indian Rupees (₹) for amounts
-2. Reference Indian banks and financial institutions
-3. Consider Indian credit scoring (CIBIL, Experian, Equifax, CRIF)
-4. Provide specific, actionable recommendations
-5. Calculate EMIs accurately using standard formulas
-6. Consider Indian tax benefits (Section 80C, 24B) when relevant
-7. Reference current RBI repo rates and lending policies
-8. Keep responses concise and helpful (max 3-4 paragraphs)
+    if (selectedAgent === "LOAN_OFFICER") {
+      const { LoanOfficerAgent } = await import("@/lib/agents/specialists/loan-officer")
+      const agent = new LoanOfficerAgent()
+      const result = await agent.recommendLoans(context || {})
+      if (result.success) {
+        agentContext = `REAL-TIME AGENT ANALYSIS:\n${JSON.stringify(result.data)}\nUse this data to answer accurately.`
+      }
+    } else if (selectedAgent === "RECOVERY") {
+      const { RecoveryAgent } = await import("@/lib/agents/specialists/recovery-agent")
+      const agent = new RecoveryAgent()
+      const result = await agent.generateRecoveryPlan(context || {})
+      if (result.success) {
+        agentContext = `REAL-TIME AGENT ANALYSIS (CIBIL & RECOVERY PLAN):\n${JSON.stringify(result.data)}\nUse this data to answer accurately.`
+      }
+    }
 
-TONE:
-- Friendly and supportive, like a trusted financial advisor
-- Clear and jargon-free explanations
-- Empowering and confidence-building
-- Patient with first-time borrowers`
+    const systemPrompt = `${specificPersona}
+    
+    LANGUAGE PREFERENCE: ${language === "hi" ? "Respond in Hindi (Devanagari script)." : "Respond in English."}
+
+    CONTEXT AWARENESS:
+    ${context ? `User Profile: ${JSON.stringify(context)}` : "No user profile available yet."}
+
+    ${agentContext}
+    
+    RESPONSE GUIDELINES:
+    1. Stay in character as the "${selectedAgent}" agent.
+    2. Keep responses concise (max 3 paragraphs).
+    3. Use Indian financial context (₹, Lakhs, Crores).
+    4. If AGENT ANALYSIS is provided, YOU MUST USE IT. Do not ask for date provided in the analysis.
+    `
 
     const conversationHistory = messages.slice(0, -1).map((msg: any) => ({
       role: msg.role === "user" ? "user" : "model",
@@ -63,22 +87,12 @@ TONE:
 
     const text = response.text
 
-    return new Response(JSON.stringify({ response: text }), {
+    return new Response(JSON.stringify({ response: text, agent: selectedAgent }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     })
   } catch (error: any) {
     console.error("Chat API error:", error)
-
-    if (error?.message?.includes("quota") || error?.message?.includes("429")) {
-      return new Response(
-        JSON.stringify({
-          error: "API quota exceeded. Please try again in a few moments.",
-        }),
-        { status: 429, headers: { "Content-Type": "application/json" } },
-      )
-    }
-
     return new Response(
       JSON.stringify({
         error: error?.message || "Failed to get response. Please try again.",

@@ -39,13 +39,16 @@ Return ONLY valid JSON in this exact format:
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-exp",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+      config: {
         temperature: 0.7,
         maxOutputTokens: 2000,
       },
     })
 
     const text = response.text
+    if (!text) {
+      throw new Error("Empty response from AI")
+    }
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error("Failed to parse JSON from response")

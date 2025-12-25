@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { OnboardingData } from "../onboarding-wizard"
+import type { OnboardingData } from "../types"
 import { ArrowRight } from "lucide-react"
 
 interface Props {
@@ -87,6 +87,22 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
             className="mt-4"
           />
           {errors.age && <p className="text-red-600 text-sm mt-1">{errors.age}</p>}
+          {errors.age && <p className="text-red-600 text-sm mt-1">{errors.age}</p>}
+        </div>
+
+        {/* Phone Number */}
+        <div>
+          <Label htmlFor="phone" className="text-base font-semibold">
+            Phone Number *
+          </Label>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="e.g. +919876543210"
+            value={data.phone || ""}
+            onChange={(e) => updateData({ phone: e.target.value })}
+            className="mt-2 h-12"
+          />
         </div>
 
         {/* City */}

@@ -98,13 +98,13 @@ export default function HeroSection() {
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="#how-it-works">
+              <Link href="/login">
                 <Button
                   size="lg"
                   variant="outline"
                   className="border-2 border-white text-white hover:bg-white/10 px-8 py-6 text-lg font-semibold rounded-full backdrop-blur-sm bg-transparent"
                 >
-                  How It Works
+                  Login
                 </Button>
               </Link>
             </div>
@@ -154,9 +154,8 @@ export default function HeroSection() {
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(idx)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === currentImage ? "bg-white w-6" : "bg-white/50"
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-all ${idx === currentImage ? "bg-white w-6" : "bg-white/50"
+                      }`}
                   />
                 ))}
               </div>
