@@ -1,7 +1,7 @@
 # ArthAstra Finance 🚀
 *> The Intelligent, Voice-First Financial Companion*
 
-**ArthAstra** (meaning "Finance Weapon/Tool" in Sanskrit) is a next-generation financial platform designed to transform how Indians interact with credit. It moves beyond the standard "fill form -> get call" model to a **"Self-Driving Finance"** experience, powered by Google's Agent Development Kit (ADK) and Vertex AI.
+ArthAstra is a voice-first financial companion that uses Google's Agent Development Kit (ADK) to orchestrate multi-agent workflows for credit recovery and automated loan decision-making. It combines forensic document vision, RAG-grounded advice, and privacy-first local processing to transform loan rejections into actionable financial roadmaps.
 
 ---
 
