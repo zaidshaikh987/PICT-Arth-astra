@@ -6,6 +6,8 @@ import { useRouter, usePathname } from "next/navigation"
 
 type Language = "en" | "hi"
 
+
+
 interface FormField {
   id: string
   name: string
@@ -140,6 +142,9 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const [isAutoMode, setIsAutoMode] = useState(false)
 
   const recognitionRef = useRef<any>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const useGeminiRef = useRef(true) // Use Gemini 2.5 Flash for transcription
   const synthRef = useRef<SpeechSynthesis | null>(null)
   const onFieldUpdateRef = useRef<((fieldId: string, value: any) => void) | null>(null)
   const onStepChangeRef = useRef<((direction: "next" | "back") => void) | null>(null)
@@ -183,9 +188,58 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
     }
   }, [])
 
-  const startListeningInternal = useCallback(() => {
-    if (!recognitionRef.current) return
+  // Gemini-based transcription using MediaRecorder
+  const transcribeWithGemini = useCallback(async (audioBlob: Blob) => {
+    try {
+      // Convert blob to base64
+      const reader = new FileReader()
+      reader.readAsDataURL(audioBlob)
 
+      reader.onloadend = async () => {
+        const base64Audio = reader.result as string
+
+        try {
+          const response = await fetch("/api/voice-transcribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audioData: base64Audio,
+              language: language
+            })
+          })
+
+          const result = await response.json()
+
+          if (result.success && result.transcription && result.transcription !== "[unclear]") {
+            setTranscript(result.transcription)
+            if (processVoiceInputRef.current) {
+              await processVoiceInputRef.current(result.transcription)
+            }
+          } else {
+            console.log("[Gemini] No clear transcription received")
+          }
+        } catch (error) {
+          console.error("[Gemini] Transcription error:", error)
+        }
+
+        setIsListening(false)
+        isRecognitionActiveRef.current = false
+
+        // Auto-restart if in form mode
+        if (isFormModeRef.current && isAutoModeRef.current) {
+          autoListenTimeoutRef.current = setTimeout(() => {
+            startListeningInternal()
+          }, 500)
+        }
+      }
+    } catch (error) {
+      console.error("[Gemini] Audio processing error:", error)
+      setIsListening(false)
+      isRecognitionActiveRef.current = false
+    }
+  }, [language])
+
+  const startListeningInternal = useCallback(async () => {
     if (autoListenTimeoutRef.current) {
       clearTimeout(autoListenTimeoutRef.current)
       autoListenTimeoutRef.current = null
@@ -195,9 +249,50 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       return
     }
 
+    // Use Gemini-based transcription with MediaRecorder
+    if (useGeminiRef.current && typeof navigator !== "undefined" && navigator.mediaDevices) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
+        mediaRecorderRef.current = mediaRecorder
+        audioChunksRef.current = []
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data)
+          }
+        }
+
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+          stream.getTracks().forEach(track => track.stop())
+          transcribeWithGemini(audioBlob)
+        }
+
+        mediaRecorder.start()
+        isRecognitionActiveRef.current = true
+        setIsListening(true)
+        setTranscript("")
+
+        // Auto-stop after 5 seconds
+        setTimeout(() => {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop()
+          }
+        }, 5000)
+
+        return
+      } catch (error) {
+        console.log("[Gemini] MediaRecorder not available, falling back to Web Speech API")
+      }
+    }
+
+    // Fallback to Web Speech API
+    if (!recognitionRef.current) return
+
     try {
       recognitionRef.current.stop()
-    } catch (e) {}
+    } catch (e) { }
 
     setTimeout(() => {
       if (!recognitionRef.current || isRecognitionActiveRef.current) return
@@ -214,7 +309,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         isRecognitionActiveRef.current = false
       }
     }, 150)
-  }, [])
+  }, [transcribeWithGemini])
 
   const speak = useCallback(
     async (text: string, lang?: Language): Promise<void> => {
@@ -321,13 +416,23 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       autoListenTimeoutRef.current = null
     }
 
+    // Stop MediaRecorder if active
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (e) { }
+    }
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop()
         isRecognitionActiveRef.current = false
         setIsListening(false)
-      } catch (e) {}
+      } catch (e) { }
     }
+
+    isRecognitionActiveRef.current = false
+    setIsListening(false)
   }, [])
 
   const stopFormFilling = useCallback(() => {
@@ -680,7 +785,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop()
-        } catch (e) {}
+        } catch (e) { }
       }
       if (autoListenTimeoutRef.current) {
         clearTimeout(autoListenTimeoutRef.current)
