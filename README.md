@@ -1,206 +1,198 @@
-# ArthAstra (LoanSaathi) 🚀
+# ArthAstra Finance 🚀
+*> The Intelligent, Voice-First Financial Companion*
 
-> **"Borrow Smarter, Not Harder."**
-
-ArthAstra is a **Next-Gen Financial Wellness Platform** designed to democratize access to credit for the "Next Billion Users" in India. It goes beyond simple loan aggregation by acting as an **Intelligent Financial Companion** that guides users through eligibility, documentation, and financial planning using Voice AI and Agentic Workflows.
-
----
-
-## 🏗️ Technical Requirements Specification
-
-This project utilizes a modern, enterprise-grade stack optimized for **Speed**, **Aesthetics**, and **Intelligence**.
-
-### 1. Core Framework & Architecture ⚙️
-*   **Framework:** [Next.js 16 (App Router)](https://nextjs.org) - Utilizing the latest React Server Components (RSC) for hybrid rendering.
-*   **Language:** [TypeScript](https://www.typescriptlang.org) - Strictly typed JavaScript ensuring type safety across the entire application.
-*   **Runtime:** Node.js (v22 compatible).
-
-### 2. Frontend Layer (UI/UX) 🎨
-*   **Styling Engine:**
-    *   **Tailwind CSS v4:** Utility-first CSS framework for rapid UI development.
-    *   `tailwind-merge` & `clsx`: Intelligent handling of dynamic class names.
-    *   `tailwindcss-animate`: Dedicated plugin for animation primitives.
-*   **Component Library:**
-    *   **Radix UI:** Headless, accessible primitives (Dialog, Select, Slider, Switch, Accordion) ensuring WAI-ARIA compliance.
-    *   `lucide-react`: Modern, consistent SVG icon set.
-*   **Animations:**
-    *   **Framer Motion:** Powering complex orchestrations (Step transitions, Pulse effects, Voice Assistant entry animations).
-*   **Data Visualization:**
-    *   **Recharts:** Responsive, composable charting library for "Financial Health" and "Peer Insights" modules.
-*   **Form Handling:**
-    *   `react-hook-form`: Performant, unstructured form state management.
-    *   **Zod:** Schema-first validation for robust inputs (Phone numbers, Income ranges, EMI math).
-
-### 3. Backend & API Layer 🔌
-*   **API Routes:** Next.js Server Functions (`app/api/*`) handling secure server-side logic.
-*   **Voice Processing:**
-    *   **Web Speech API:** Native Browser API used for distinct Speech-to-Text (STT) and Text-to-Speech (TTS) capabilities without external latency.
-**New in v2.0:** A ground-breaking feature powered by **Google Genkit (ADK Concept)** and **Gemini Pro**.* The high-speed "Brain" powering the agentic reasoning.
-    *   `@google/genai` SDK: Direct interface for AI model communication.
-*   **Notifications:**
-    *   **Twilio SDK:** (`twilio`) Integrated for real-time WhatsApp and SMS status updates to the user's registered phone number.
-
-### 4. Logical & Agentic Layers 🧠
-*   **Agent Architecture:**
-    *   **BaseAgent Class:** Abstract foundation handling model fallback, rate-limiting, and error resilience.
-    *   **Specialist Agents:**
-        *   `LoanOfficerAgent`: Merges deterministic math (Calculators) with probabilistic LLM reasoning to explain eligibility.
-        *   `RecoveryAgent`: Diagnoses rejection reasons (e.g., High DTI) and generates "chemically actionable" recovery plans.
-*   **Simulation Engines (Local Logic):**
-    *   `calculator.ts`: Pure functions for EMI, Eligibility ratios, and Amortization schedules.
-    *   `voice-assistant-context.tsx`: Client-side NLU state machine managing voice commands (`"Go to dashboard"`, `"Check eligibility"`).
-
-### 5. Storage & State Management 💾
-*   **Client-Side Persistence:**
-    *   **LocalStorage:** Acts as the primary "Local-First" database, persisting sensitive user data (`onboardingData`, `loanProfile`, `authSession`) on the client device for privacy.
-*   **State Management:**
-    *   **React Context API:** Used for `VoiceAssistantProvider` and `LanguageProvider` to broadcast global state without the overhead of Redux.
-
-### 6. Development Tools 🛠️
-*   **Linting:** ESLint configured for Next.js best practices.
-*   **Formatting:** Prettier (implied standard).
-*   **Bundler:** Turbopack (via Next.js 16) for instant HMR updates.
+**ArthAstra** (meaning "Finance Weapon/Tool" in Sanskrit) is a next-generation financial platform designed to transform how Indians interact with credit. It moves beyond the standard "fill form -> get call" model to a **"Self-Driving Finance"** experience, powered by Google's Agent Development Kit (ADK) and Vertex AI.
 
 ---
 
-## 🌟 Key Features Deep Dive
+## 🏆 Executive Verdict
 
-### 🎙️ Bilingual Voice AI (Mic Integration)
-We leverage the **Web Speech API** to create a hands-free banking experience.
--   **Microphone Access:** One-click activation via the floating "Mic" button.
--   **Speech-to-Intent:** The system parses natural language like *"Mera naam Rahul hai"* (My name is Rahul) or *"5 Lakh ka loan chahiye"* (I need a 5 Lakh loan) and auto-fills the corresponding form fields.
--   **Voice Navigation:** Users can jump between modules just by saying *"Open Document Checklist"* or *"Show me the Loan Comparison"*.
+ArthAstra is not just a loan aggregator; it is an **Intelligent Financial Companion**. The combination of **Voice Accessibility**, **Agentic AI Guidance**, and **Financial Planning Tools** places this product in the top 1% of fintech UX.
 
-### � Intelligent Agents
-### 4. "The Financial Council" (Multi-Agent System) 🏛️
-**Pattern: Reflection & Debate**
-*   **The Optimist Agent:** Analyzes your profile to find "Hidden Gems" (e.g., potential income growth).
-*   **The Pessimist Agent:** Ruthlessly finds risks (e.g., hidden liabilities).
-*   **The Judge Agent:** Listens to both arguments and delivers a final, unbiased verdict in real-time.
-*   **Why Method works:** Prevents "Hallucinations" by forcing the AI to critique its own findings before deciding.
+### 1. The Core Experience 🏠
+*Foundational features that manage the loan lifecycle.*
 
-### 5. "The Rejection Recovery Squad" (Autonomous Tool-Calling Pipeline) 📉➡️📈
-**Pattern: Agentic Tool Use + Chain of Thought**
+| Feature | Status | What makes it special? |
+| :--- | :--- | :--- |
+| **Smart Onboarding** | ⭐ Gold Standard | It’s not just a form; it learns. Saves progress locally and adapts questions dynamically (e.g., conditional co-borrower logic). |
+| **Pulse Timeline** | ✅ Live & Dynamic | Pulses to show activity. Gives "Estimated Completion Dates" to reduce user anxiety about the "black box" process. |
+| **Secure Vault** | 🔒 Premium Security | Visual verification status for documents. Treats user data with the visual respect it deserves. |
+| **AI Loan Matching** | 🤖 Algorithmic | Recommends loans based on approval odds, not just interest rates. |
 
-This is a **true agentic system** where AI agents autonomously call deterministic tools before reasoning.
+### 2. Financial Intelligence Tools 🧠
+*Advanced tools that help users make better decisions.*
 
-#### Architecture Diagram
-```
-USER DATA
-    ↓
-┌───────────────────────────────────────────────────────────┐
-│  AGENT 1: THE INVESTIGATOR (Sherlock) 🕵️                 │
-├───────────────────────────────────────────────────────────┤
-│  TOOL CALLS (Autonomous):                                │
-│  • calculateDTI(income, EMI, expenses) → 58.3%           │
-│  • analyzeEmploymentRisk(type, tenure) → "Critical"      │
-│  • detectFinancialAnomalies(userData) → 2 flags          │
-├───────────────────────────────────────────────────────────┤
-│  AI REASONING (Gemini 1.5 Flash):                        │
-│  "Based on DTI=58.3% and employment risk=Critical..."    │
-│  OUTPUT: { rootCause, bulletPoints[], severity }         │
-└─────────────────────┬─────────────────────────────────────┘
-                      ↓ (JSON Handoff)
-┌───────────────────────────────────────────────────────────┐
-│  AGENT 2: THE NEGOTIATOR (The Wolf) 🐺                   │
-├───────────────────────────────────────────────────────────┤
-│  INPUT: Investigator's findings                          │
-│  TOOL CALLS:                                             │
-│  • simulateCreditScoreImpact(650, actions) → 680         │
-├───────────────────────────────────────────────────────────┤
-│  AI REASONING:                                           │
-│  "Score can improve by 30 points if..."                 │
-│  OUTPUT: { strategyName, bulletPoints[], script }        │
-└─────────────────────┬─────────────────────────────────────┘
-                      ↓ (JSON Handoff)
-┌───────────────────────────────────────────────────────────┐
-│  AGENT 3: THE ARCHITECT (The Builder) 🏗️                │
-├───────────────────────────────────────────────────────────┤
-│  INPUT: Negotiator's strategy                           │
-│  TOOL CALLS:                                             │
-│  • calculateSavingsTimeline(target, rate) → 6 months    │
-├───────────────────────────────────────────────────────────┤
-│  AI REASONING:                                           │
-│  "Build emergency fund in 6 months, then..."            │
-│  OUTPUT: { step1, step2, step3, estimatedDays }          │
-└───────────────────────────────────────────────────────────┘
-                      ↓
-                 FRONTEND UI
-```
+| Feature | Status | What makes it special? |
+| :--- | :--- | :--- |
+| **Credit Optimizer** | 🚀 Innovative | A "What-If" simulator. "If I pay off ₹20k debt, my chances go up 15%." Turns rejection into a roadmap. |
+| **Multi-Goal Planner** | 🎯 Strategic | Recognizes users have multiple dreams (Home + Car). Suggests optimal loan sequencing. |
+| **Eligibility Reports** | 📊 Detailed | Breakdowns reason for eligibility ("Income: Pass, Credit Score: Warning") rather than a simple Yes/No. |
 
-#### Why This Is True Agentic AI (Not Just a Chatbot)
+### 3. Trust & Retention Engines 🛡️
+*Features designed to keep users engaged even if they face rejection.*
 
-| Feature | Chatbot | ArthAstra Agents |
-|---------|---------|------------------|
-| **Decision Making** | Pre-scripted responses | Autonomous tool selection |
-| **Data Source** | Text generation only | Real calculators + AI reasoning |
-| **Tool Use** | None | DTI, Credit Simulator, Anomaly Detection |
-| **Output Format** | Generic paragraphs | Structured JSON with bullet points |
-| **Handoffs** | N/A | Agent 1 → Agent 2 → Agent 3 |
+| Feature | Status | What makes it special? |
+| :--- | :--- | :--- |
+| **Rejection Recovery** | 🩺 The "Doctor" | Diagnoses the rejection (e.g., "High DTI") and triggers the **ADK Recovery Squad** to fix it. |
+| **Peer Insights** | 👥 Social Proof | "Better than 78% of applicants like you." Gamifies financial health. |
+| **Testimonials** | 📖 Relatable | Dynamic stories matching the user's profile (e.g., Freelancer sees Freelancer success stories). |
 
-#### Tools Available to Agents
-| Tool Name | Purpose | Used By |
-|-----------|---------|---------|
-| `calculateDTI()` | Debt-to-Income ratio | Investigator |
-| `analyzeEmploymentRisk()` | Risk scoring (0-100) | Investigator |
-| `detectFinancialAnomalies()` | Income/savings consistency check | Investigator |
-| `simulateCreditScoreImpact()` | Project score changes | Negotiator |
-| `calculateSavingsTimeline()` | Months to goal | Architect |
+### 4. The "X-Factor": Accessibility 🗣️
+*Killer features for the Indian market.*
 
-See full implementation in `lib/tools/agent-tools.ts`.
+| Feature | Status | What makes it special? |
+| :--- | :--- | :--- |
+| **Bilingual Voice AI** | 🎙️ Game Changer | Users can speak answers in Hindi/English. Understands "5 Lakh" and "Pachaas Hazaar" natively. |
+| **Voice Navigation** | 🧭 Hands-Free | "Check my eligibility" navigates the app. Feels like a conversation with a banker. |
+| **Contextual Chatbot** | 💬 Smart | Knows your income context. Doesn't ask redundant questions. |
 
-### 📲 Real-Time Updates (Twilio)
--   **WhatsApp Integration:** Users receive instant notifications for:
-    -   Application Submission 📝
-    -   Document Verification ✅
-    -   Loan Disbursement 💰
+---
+## 🔐 Local-First Architecture (Privacy & Scope)
+
+In the current hackathon version, ArthAstra uses a **"Local-First" Architecture** powered by Browser LocalStorage.
+
+### 🔧 Technical Details
+*   **User Data**: All sensitive financial info (Income, EMI, etc.) is saved as a JSON string directly in the user's browser `window.localStorage`.
+*   **Session**: Login state is managed locally.
+*   **Documents**: We simulate the "Secure Vault" by referencing file metadata locally.
+
+### 💡 Why this is a "Feature" (Not a bug)
+1.  **Privacy 🛡️**: This acts as a **"Zero-Knowledge Privacy Feature"**. No financial data is ever saved to our servers; it stays on the user's device. We only process it ephemerally for the AI Council.
+2.  **Speed ⚡**: Instant load times with no database latency.
+3.  **Hackathon Scope**: It simplifies deployment (no database setup required) while perfectly demonstrating the functionality.
 
 ---
 
-## 🛠️ Installation & Setup
 
-### Prerequisites
--   Node.js v22 or higher
--   Google Cloud API Key (for Gemini)
--   Twilio Account (Optional, for WhatsApp features)
+## 👨‍💻 Technical Summary
 
-### 1. Environment Variables
-Create a `.env.local` file in the root directory:
+*   **Architecture**: Local-First Hybrid (Fast UX + Server Sync).
+*   **Aesthetic**: "Glassmorphism" gradients + Tailwind CSS (Premium Feel).
+*   **Stack**: Next.js 15, React Server Components, Framer Motion, **Google ADK**, **Vertex AI**.
 
-```env
-# AI Intelligence
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key_here
+---
 
-# Notifications (Optional)
-TWILIO_ACCOUNT_SID=your_sid
-TWILIO_AUTH_TOKEN=your_token
-TWILIO_WHATSAPP_NUMBER=your_number
+## 🏗️ Project Structure
+
+We separate AI logic (`lib/agents`, `lib/tools`) from the frontend UI (`app`, `components`).
+
+### 📂 Core Directories
+
+| Directory | Description |
+| :--- | :--- |
+| **`lib/agents/`** | **The Brain.** Contains the Google ADK Agent definitions. |
+| ├── `adk-recovery-squad.ts` | The 3-agent pipeline (Investigator -> Negotiator -> Architect). |
+| ├── `adk-council.ts` | The Multi-Agent Debate System (Optimist vs Pessimist -> Judge). |
+| **`lib/tools/`** | **The Hands.** Functional tools used by agents. |
+| ├── `eligibility-calculator.ts` | Calculates DTI, LTV, and credit health. |
+| ├── `credit-simulator.ts` | Simulates credit score improvements. |
+| ├── `agent-tools.ts` | Type-safe wrappers for tools using Zod schemas. |
+| **`lib/ai/`** | **The Eyes.** Vision and RAG modules. |
+| ├── `doc-vision.ts` | Uses `gemini-2.5-flash` for forensic document verification. |
+| **`app/api/`** | **The Interface.** Next.js API Routes connecting UI to Agents. |
+| ├── `rejection-recovery/` | Trigger point for the Recovery Squad pipeline. |
+| ├── `council-meeting/` | Trigger point for the Financial Council debate. |
+| ├── `verify-document/` | Endpoint for document upload and analysis. |
+
+---
+
+## 🧠 The 4 Levels of ArthAstra Intelligence
+
+ArthAstra uses a **4-Layer Cognitive Architecture** to process financial decisions.
+
+### Level 1: Perception & Knowledge (Vision + RAG)
+*The system "Sees" documents and "Knows" rules.*
+*   **👁️ Forensic Vision**: Uses `gemini-2.5-flash` to verify documents, detecting blurs, edits, and extracting data (Name/ID).
+*   **📚 RAG Brain**: Uses `text-embedding-004` to retrieve context from a specialized knowledge base (RBI guidelines, Tax rules) so answers are factually grounded.
+
+### Level 2: Analytic Reasoning (The Investigator)
+*The "Sherlock Holmes" of Finance.*
+*   **Role**: Analyzes the raw data (Income, EMI, Tenure).
+*   **Action**: Calls deterministic tools (`calculateDTI`, `analyzeEmploymentRisk`) to separate "Bad Data" from "Bad Luck".
+*   **Result**: Produces a forensic investigation report.
+
+### Level 3: Strategic Planning (The Negotiator & Architect)
+*The "Strategy Team".*
+*   **The Negotiator**: Takes the investigation findings and "spins" them. If tenure is low, emphasizes income stability.
+*   **The Architect**: Builds the concrete roadmap. "Save ₹5k/month for 6 months -> Score hits 750 -> Apply."
+*   **Result**: A 3-step action plan (JSON Output).
+
+### Level 4: Adversarial Judgment (The Financial Council)
+*The "Supreme Court".*
+*   A **Parallel Debate System** that simulates real-world loan committees.
+    1.  **⚡ The Optimist**: Argues for approval based on "Potential".
+    2.  **🔒 The Pessimist**: Argues for rejection based on "Risk".
+    3.  **⚖️ The Judge**: Weighs both arguments against regulatory limits and issues a binding, biased-free verdict.
+
+> **Why this matters**: Most AI just "chats". ArthAstra **Perceives, Analyzes, Plans, and Judges.**
+
+---
+
+### 🧬 System Architecture Diagrams
+
+**1. The Recovery Squad (Levels 2 & 3)**
+```mermaid
+graph TD
+    User[User Input] -->|Data| Level2[🕵️ Investigator]
+    Level2 -->|Analysis| Level3a[🐺 Negotiator]
+    Level3a -->|Strategy| Level3b[🏗️ Architect]
+    Level3b -->|Plan| Final[User Dashboard]
 ```
 
-### 2. Install Dependencies
+**2. The Financial Council (Level 4)**
+```mermaid
+graph TD
+    Input[Loan Request] -->|Broadcast| Opt[⚡ Optimist]
+    Input -->|Broadcast| Pess[🔒 Pessimist]
+    Opt -->|Argue| Judge[⚖️ The Judge]
+    Pess -->|Argue| Judge
+    Judge -->|Verdict| Decision[Final Output]
+```
+
+---
+
+## 🚀 Google Cloud Deployment Guide
+
+We are designed for **Google Cloud Run**.
+
+### 1. Enable APIs
 ```bash
-npm install
-# or
-pnpm install
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
 ```
 
-### 3. Run Development Server
+### 2. Build Container
 ```bash
-npm run dev
+gcloud builds submit --tag gcr.io/[PROJECT_ID]/arth-astra-v2
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### 3. Deploy
+```bash
+gcloud run deploy arth-astra-live \
+  --image gcr.io/[PROJECT_ID]/arth-astra-v2 \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_GENERATIVE_AI_API_KEY="[YOUR_KEY]"
+```
 
 ---
 
-## 🚀 Deployment
+## 🛠️ Local Development
 
-The project is configured for cloud deployment (e.g., Google Cloud Run, Vercel).
-
-### Docker Support
-A `Dockerfile` is included to containerize the application for Google Cloud Run.
-1.  **Build:** `docker build -t arthastra .`
-2.  **Run:** `docker run -p 3000:3000 arthastra`
+1.  **Clone & Install**:
+    ```bash
+    git clone https://github.com/your-repo/arth-astra.git
+    npm install
+    ```
+2.  **Environment**:
+    Create `.env.local`:
+    ```env
+    GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+    ```
+3.  **Run**:
+    ```bash
+    npm run dev
+    ```
 
 ---
 
-**© 2025 ArthAstra Financial Services.** Built with ❤️ for India.
+*> Built with ❤️ for the Google GenAI Hackathon.*

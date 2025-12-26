@@ -43,6 +43,10 @@ type UploadedFile = {
   type: string
   url: string
   uploadedAt: string
+  verificationStatus?: "verifying" | "verified" | "rejected" | "pending"
+  verificationIssues?: string[]
+  confidence?: number
+  extractedData?: any
 }
 
 const documentCategories = [
@@ -177,22 +181,63 @@ export default function DocumentChecklist() {
       return
     }
 
-    // Convert to base64 for storage (in production, upload to server/cloud)
+    // Convert to base64 for storage and verification
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onload = async () => {
+      const base64Data = reader.result as string
       const newFile: UploadedFile = {
         id: Date.now().toString(),
         docId,
         name: file.name,
         size: file.size,
         type: file.type,
-        url: reader.result as string,
+        url: base64Data,
         uploadedAt: new Date().toISOString(),
+        verificationStatus: "verifying" // Initial status
       }
 
+      // Optimistic update
       const updatedFiles = [...uploadedFiles, newFile]
       setUploadedFiles(updatedFiles)
-      localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles))
+
+      try {
+        // Call Vertex AI Vision API
+        const response = await fetch("/api/verify-document", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageData: base64Data,
+            documentType: docId === "pan" ? "pan" :
+              docId === "aadhaar" ? "aadhaar" :
+                docId === "salary-slip" ? "salary_slip" : "bank_statement"
+          })
+        })
+
+        const result = await response.json()
+
+        // Update file with verification result
+        const status: "verified" | "rejected" = result.verification?.isValid ? "verified" : "rejected"
+
+        const verifiedFile: UploadedFile = {
+          ...newFile,
+          verificationStatus: status,
+          verificationIssues: (result.verification?.issues as string[]) || [],
+          confidence: result.verification?.confidence as number,
+          extractedData: result.verification?.extractedData
+        }
+
+        setUploadedFiles(prev => prev.map(f => f.id === newFile.id ? verifiedFile : f))
+
+        // Store in local storage
+        const currentFiles = JSON.parse(localStorage.getItem("uploadedFiles") || "[]")
+        const newStoredFiles = [...currentFiles.filter((f: any) => f.id !== newFile.id), verifiedFile]
+        localStorage.setItem("uploadedFiles", JSON.stringify(newStoredFiles))
+
+      } catch (error) {
+        console.error("Verification failed", error)
+        // Mark as pending if API fails (don't block user)
+        setUploadedFiles(prev => prev.map(f => f.id === newFile.id ? { ...f, verificationStatus: "pending" } : f))
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -355,6 +400,24 @@ export default function DocumentChecklist() {
                                       </p>
                                     </div>
                                   </div>
+
+                                  {/* Verification Badge */}
+                                  {file.verificationStatus === "verifying" && (
+                                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full flex items-center gap-1 animate-pulse">
+                                      <Eye className="w-3 h-3" /> Verifying...
+                                    </span>
+                                  )}
+                                  {file.verificationStatus === "verified" && (
+                                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1">
+                                      <ShieldCheck className="w-3 h-3" /> Verified ({file.confidence}%)
+                                    </span>
+                                  )}
+                                  {file.verificationStatus === "rejected" && (
+                                    <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full flex items-center gap-1">
+                                      <AlertCircle className="w-3 h-3" /> Issues Found
+                                    </span>
+                                  )}
+
                                   <div className="flex gap-2">
                                     <Button
                                       size="sm"
@@ -373,6 +436,35 @@ export default function DocumentChecklist() {
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </div>
+
+                                  {/* 🔴 Validation Errors */}
+                                  {file.verificationStatus === "rejected" && file.verificationIssues && file.verificationIssues.length > 0 && (
+                                    <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 w-full">
+                                      <strong>⚠️ Validation Failed:</strong>
+                                      <ul className="list-disc list-inside mt-1">
+                                        {file.verificationIssues.map((issue, i) => (
+                                          <li key={i}>{issue}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* 🟢 Extracted Data */}
+                                  {file.extractedData && (
+                                    <div className="mt-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 w-full">
+                                      <strong>📋 Extracted Details:</strong>
+                                      <div className="grid grid-cols-2 gap-1 mt-1">
+                                        {Object.entries(file.extractedData || {}).map(([key, value]) => {
+                                          if (!value) return null;
+                                          return (
+                                            <div key={key}>
+                                              <span className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {String(value)}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

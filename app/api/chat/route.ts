@@ -47,12 +47,25 @@ export async function POST(req: Request) {
         agentContext = `REAL-TIME AGENT ANALYSIS:\n${JSON.stringify(result.data)}\nUse this data to answer accurately.`
       }
     } else if (selectedAgent === "RECOVERY") {
+    } else if (selectedAgent === "RECOVERY") {
       const { RecoveryAgent } = await import("@/lib/agents/specialists/recovery-agent")
       const agent = new RecoveryAgent()
       const result = await agent.generateRecoveryPlan(context || {})
       if (result.success) {
         agentContext = `REAL-TIME AGENT ANALYSIS (CIBIL & RECOVERY PLAN):\n${JSON.stringify(result.data)}\nUse this data to answer accurately.`
       }
+    }
+
+    // RAG: Semantic search for relevant knowledge
+    let ragContext = "";
+    try {
+      const { vectorStore } = await import("@/lib/ai/vector-store");
+      const relevantKnowledge = await vectorStore.getContext(lastMessage.content);
+      if (relevantKnowledge) {
+        ragContext = `\nKNOWLEDGE BASE (Use this to answer questions about ArthAstra features):\n${relevantKnowledge}`;
+      }
+    } catch (error) {
+      console.log("RAG not available:", error);
     }
 
     const systemPrompt = `${specificPersona}
@@ -63,12 +76,15 @@ export async function POST(req: Request) {
     ${context ? `User Profile: ${JSON.stringify(context)}` : "No user profile available yet."}
 
     ${agentContext}
+
+    ${ragContext}
     
     RESPONSE GUIDELINES:
     1. Stay in character as the "${selectedAgent}" agent.
     2. Keep responses concise (max 3 paragraphs).
     3. Use Indian financial context (₹, Lakhs, Crores).
-    4. If AGENT ANALYSIS is provided, YOU MUST USE IT. Do not ask for date provided in the analysis.
+    4. If AGENT ANALYSIS is provided, YOU MUST USE IT. Do not ask for data provided in the analysis.
+    5. If KNOWLEDGE BASE info is provided, use it to give accurate answers about ArthAstra features.
     `
 
     const conversationHistory = messages.slice(0, -1).map((msg: any) => ({
