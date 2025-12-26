@@ -67,8 +67,8 @@ IMPORTANT: Return ONLY JSON. No markdown.
 Format: {"isValid": boolean, "confidence": 0-100, "issues": [], "name": "account holder", "bank": "bank name"}`,
         };
 
-        // Use gemini-2.5-flash which works in base-agent.ts
-        const MODEL_NAME = "gemini-2.5-flash";
+        // Use gemini-1.5-flash for better rate limits (15 RPM vs 5 RPM)
+        const MODEL_NAME = "gemini-1.5-flash";
         console.log("🤖 calling model:", MODEL_NAME);
 
         // Detect MIME type and base64 data

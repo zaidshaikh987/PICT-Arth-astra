@@ -22,7 +22,7 @@ export abstract class BaseAgent implements Agent {
     abstract process(input: any): Promise<AgentResponse>
 
     protected async generate(prompt: string, config?: any): Promise<string> {
-        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash-exp"]
+        const modelsToTry = ["gemini-1.5-flash", "gemini-2.0-flash-exp"]
 
         for (const modelName of modelsToTry) {
             try {

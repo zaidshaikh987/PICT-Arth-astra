@@ -24,7 +24,7 @@ const sessionService = new InMemorySessionService();
 
 // Shared Model Configuration with Explicit API Key
 const geminiModel = new Gemini({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
