@@ -1,516 +1,485 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
 import { useUser } from "@/lib/user-context"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { ArrowLeft, CheckCircle2, Download, Send, ShieldCheck, Clock } from "lucide-react"
 import Link from "next/link"
-import {
-    ArrowLeft, Download, CheckCircle2, AlertCircle, User,
-    Briefcase, MapPin, Lock, FileCheck, Phone, Loader2
-} from "lucide-react"
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const REQUIRED_DOCS = ["pan", "aadhaar", "salary-slip", "bank-statement"]
-
-const DOC_LABELS: Record<string, string> = {
-    "pan": "PAN Card",
-    "aadhaar": "Aadhaar Card",
-    "salary-slip": "Salary Slip",
-    "bank-statement": "Bank Statement (Last 3 Months)",
+/* ─────────────────────────────── helpers ─────────────────── */
+function fmt(n?: number | null, prefix = "₹") {
+    if (n == null) return "—"
+    return `${prefix}${n.toLocaleString("en-IN")}`
 }
-
-const fmt = (n: number | undefined) =>
-    n ? `₹${n.toLocaleString("en-IN")}` : "—"
-
-const tenureLabel: Record<string, string> = {
-    none: "Not Applicable",
-    "<6_months": "Less than 6 months",
-    "6m-1yr": "6 Months – 1 Year",
-    "1-2yr": "1–2 Years",
-    "2-5yr": "2–5 Years",
-    "5+yr": "5+ Years",
+function cap(s?: string) {
+    if (!s) return "—"
+    return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
-
-const purposeLabel: Record<string, string> = {
-    education: "Education Loan", personal: "Personal Loan", business: "Business Loan",
-    home: "Home Loan", car: "Car Loan", medical: "Medical Loan",
-    wedding: "Wedding Loan", travel: "Travel Loan",
-}
-
-const empLabel: Record<string, string> = {
-    salaried: "Salaried Employee", self_employed: "Self-Employed",
-    freelancer: "Freelancer / Consultant", student: "Student",
-    unemployed: "Currently Unemployed",
-}
-
-function Field({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-    return (
-        <div className={`grid grid-cols-5 border-b border-[#c8d6e5] text-[12.5px] ${highlight ? "bg-[#eef4fc]" : "bg-white"}`}>
-            <div className="col-span-2 py-2 px-3 font-semibold text-[#1a3a6c] border-r border-[#c8d6e5]">{label}</div>
-            <div className="col-span-3 py-2 px-3 text-[#1a1a1a] font-medium uppercase tracking-wide">{value || "—"}</div>
-        </div>
-    )
-}
-
-function Section({ title, icon }: { title: string; icon?: React.ReactNode }) {
-    return (
-        <div className="bg-[#1a3a6c] text-white px-4 py-2.5 flex items-center gap-2 mt-5">
-            {icon && <span>{icon}</span>}
-            <span className="text-[11px] font-bold tracking-widest uppercase">{title}</span>
-        </div>
-    )
-}
-
-async function triggerTwilio(stage: string, user: any, extraData?: any) {
-    try {
-        await fetch("/api/notify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                stage,
-                userData: { name: user.name, phone: user.phone, creditScore: user.creditScore, amount: user.loanAmount, ...extraData }
-            })
-        })
-    } catch (e) {
-        console.error("[Twilio] Failed to send:", e)
+function tenureLabel(t?: string) {
+    const map: Record<string, string> = {
+        none: "Not Applicable",
+        "<6_months": "< 6 Months",
+        "6m-1yr": "6 Months – 1 Year",
+        "1-2yr": "1 – 2 Years",
+        "2-5yr": "2 – 5 Years",
+        "5+yr": "5+ Years",
     }
+    return t ? (map[t] ?? t) : "—"
+}
+function savingsLabel(s?: string) {
+    const map: Record<string, string> = {
+        "0-50k": "₹0 – ₹50,000",
+        "50k-1L": "₹50,000 – ₹1 Lakh",
+        "1L-5L": "₹1 Lakh – ₹5 Lakh",
+        "5L+": "₹5 Lakh+",
+    }
+    return s ? (map[s] ?? s) : "—"
 }
 
-// ─── Document Gate Component ──────────────────────────────────────────────────
-
-function DocumentGate({ user, uploadedDocIds }: { user: any; uploadedDocIds: string[] }) {
-    const missingDocs = REQUIRED_DOCS.filter(id => !uploadedDocIds.includes(id))
-    const uploaded = REQUIRED_DOCS.filter(id => uploadedDocIds.includes(id))
-
+/* ─────────────────────────────── sub-components ───────────── */
+function SectionHeader({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 py-10">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full border-t-4 border-[#d41e29]">
-                {/* HDFC Header */}
-                <div className="flex items-center justify-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-[#d41e29] rounded-sm flex items-center justify-center">
-                        <span className="text-white font-black text-lg">H</span>
-                    </div>
-                    <div>
-                        <div className="text-[#1a3a6c] font-black text-lg leading-none">HDFC BANK</div>
-                        <div className="text-[#1a3a6c] text-xs font-semibold leading-none text-center">Loan Portal</div>
-                    </div>
-                </div>
+        <div className="bg-[#004C8F] text-white font-bold text-sm px-4 py-2 uppercase tracking-wide">
+            {children}
+        </div>
+    )
+}
 
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-[#fff3f3] rounded-full flex items-center justify-center flex-shrink-0">
-                        <Lock className="w-6 h-6 text-[#d41e29]" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-[#1a3a6c]">Documents Required</h2>
-                        <p className="text-sm text-gray-500">You need to upload all required documents before applying.</p>
-                    </div>
-                </div>
+function Row({ label, value, highlight }: { label: string; value?: string; highlight?: boolean }) {
+    return (
+        <tr className="border-b border-[#D0E4F5] even:bg-[#F4F9FF]">
+            <td className="text-[11px] text-gray-600 font-medium py-2 px-4 w-1/3">{label}</td>
+            <td className={`py-2 px-4 text-[13px] font-semibold ${highlight ? "text-[#004C8F]" : "text-gray-900"}`}>
+                {value || "—"}
+            </td>
+        </tr>
+    )
+}
 
-                <div className="space-y-2 mb-6">
-                    {REQUIRED_DOCS.map(id => {
-                        const done = uploadedDocIds.includes(id)
-                        return (
-                            <div key={id} className={`flex items-center gap-3 p-3 rounded-xl border ${done ? "border-green-200 bg-green-50" : "border-red-100 bg-red-50"}`}>
-                                {done
-                                    ? <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                    : <AlertCircle className="w-5 h-5 text-[#d41e29] flex-shrink-0" />
-                                }
-                                <div className="flex-1">
-                                    <p className={`text-sm font-semibold ${done ? "text-green-700" : "text-[#d41e29]"}`}>{DOC_LABELS[id]}</p>
-                                    <p className="text-xs text-gray-500">{done ? "Uploaded ✓" : "Missing — required for HDFC application"}</p>
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-
-                <div className="text-center mb-5">
-                    <p className="text-sm text-gray-500">
-                        <span className="font-bold text-[#1a3a6c]">{uploaded.length} of {REQUIRED_DOCS.length}</span> documents uploaded
-                    </p>
-                    <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
-                        <div
-                            className="bg-[#1a3a6c] h-2 rounded-full transition-all duration-700"
-                            style={{ width: `${(uploaded.length / REQUIRED_DOCS.length) * 100}%` }}
-                        />
-                    </div>
-                </div>
-
-                <div className="flex gap-3">
-                    <Link href="/dashboard/loans"
-                        className="flex-1 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-semibold text-center hover:bg-gray-50 transition-colors text-sm">
-                        ← Back
-                    </Link>
-                    <Link href="/dashboard/documents"
-                        className="flex-1 bg-[#1a3a6c] text-white py-3 rounded-xl font-bold text-center hover:bg-[#0d2447] transition-colors text-sm flex items-center justify-center gap-2">
-                        <FileCheck className="w-4 h-4" />
-                        Upload Documents
-                    </Link>
-                </div>
+function FormField({ label, value, wide }: { label: string; value?: string; wide?: boolean }) {
+    return (
+        <div className={`flex flex-col gap-1 ${wide ? "col-span-2" : ""}`}>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">{label}</label>
+            <div className="border border-[#B8D4EE] bg-[#F4F9FF] rounded px-3 py-2 text-[13px] font-semibold text-gray-900 min-h-[36px]">
+                {value || (
+                    <span className="text-gray-400 font-normal italic text-xs">Not provided</span>
+                )}
             </div>
         </div>
     )
 }
 
-// ─── Success Screen ───────────────────────────────────────────────────────────
-
-function SuccessScreen({ appId, user }: { appId: string; user: any }) {
-    return (
-        <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center border-t-4 border-[#1a3a6c]">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <CheckCircle2 className="w-10 h-10 text-green-600" />
-                </div>
-                <div className="flex justify-center mb-4 gap-2">
-                    <div className="w-9 h-9 bg-[#d41e29] rounded-sm flex items-center justify-center">
-                        <span className="text-white text-sm font-black">H</span>
-                    </div>
-                    <div className="text-left">
-                        <div className="text-[#1a3a6c] font-black leading-none">HDFC</div>
-                        <div className="text-[#1a3a6c] text-sm font-semibold leading-none">BANK</div>
-                    </div>
-                </div>
-                <h2 className="text-2xl font-bold text-[#1a3a6c] mb-2">Application Submitted!</h2>
-                <p className="text-gray-600 mb-4">Your loan application has been sent to HDFC Bank.</p>
-
-                <div className="bg-[#eef4fc] border border-[#c8d6e5] rounded-xl p-4 mb-4">
-                    <p className="text-xs text-gray-500 mb-1">Reference Number</p>
-                    <p className="text-xl font-bold text-[#1a3a6c] font-mono tracking-wider">{appId}</p>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-left">
-                    <p className="text-sm font-bold text-amber-800 flex items-center gap-2 mb-2">
-                        <Phone className="w-4 h-4" /> WhatsApp Notification Sent!
-                    </p>
-                    <p className="text-xs text-amber-700">
-                        A confirmation has been sent to <strong>{user.phone}</strong> via WhatsApp. HDFC Bank will contact you within <strong>2 business days</strong>.
-                    </p>
-                </div>
-
-                <div className="space-y-2 text-sm text-gray-600 mb-6">
-                    <p>📋 Processing time: <strong>2–5 working days</strong></p>
-                    <p>📞 HDFC helpline: <strong>1800-202-6161</strong></p>
-                </div>
-
-                <div className="flex gap-3">
-                    <Link href="/dashboard" className="flex-1 bg-[#1a3a6c] text-white py-3 rounded-xl font-semibold text-center hover:bg-[#0d2447] transition-colors">
-                        Dashboard
-                    </Link>
-                    <Link href="/dashboard/timeline" className="flex-1 border-2 border-[#1a3a6c] text-[#1a3a6c] py-3 rounded-xl font-semibold text-center hover:bg-[#eef4fc] transition-colors">
-                        Track Status
-                    </Link>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
-
-export default function HDFCApplicationPage() {
+/* ─────────────────────────────── main page ────────────────── */
+export default function HDFCApplyPage() {
     const { user, loading, updateUser } = useUser()
+    const router = useRouter()
     const [submitted, setSubmitted] = useState(false)
     const [submitting, setSubmitting] = useState(false)
-    const appId = useRef(`HDFC-AA-${Date.now().toString(36).toUpperCase()}`)
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-[#1a3a6c] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-[#1a3a6c] font-semibold">Loading your application...</p>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-[#004C8F] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-gray-600 text-sm">Loading your application…</p>
                 </div>
             </div>
         )
     }
 
-    if (!user) {
-        return (
-            <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center">
-                <p className="text-red-600 font-semibold">Please log in first.</p>
-            </div>
-        )
-    }
+    const u = user || {}
 
-    const uploadedFiles: any[] = user.uploadedFiles || []
-    const uploadedDocIds = [...new Set(uploadedFiles.map((f: any) => f.docId))] as string[]
-    const allDocsUploaded = REQUIRED_DOCS.every(id => uploadedDocIds.includes(id))
+    // Computed loan details
+    const loanAmount = u.loanAmount || 500000
+    const tenure = u.tenure || 3
+    const rate = 10.5
+    const monthlyRate = rate / 12 / 100
+    const months = tenure * 12
+    const emi =
+        months > 0
+            ? Math.round(
+                (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+                (Math.pow(1 + monthlyRate, months) - 1)
+            )
+            : 0
+    const processingFee = Math.round(loanAmount * 0.015)
 
-    // GATE: block access if docs not ready
-    if (!allDocsUploaded) {
-        return <DocumentGate user={user} uploadedDocIds={uploadedDocIds} />
+    async function handleSubmit() {
+        setSubmitting(true)
+        await updateUser({
+            selectedLoan: {
+                bankName: "HDFC Bank",
+                productName: "Personal Loan – Premium",
+                rate,
+                emi,
+                tenure,
+                principal: loanAmount,
+                processingFee,
+            },
+            timelineSimulation: {
+                ...(u.timelineSimulation || {}),
+                appSubmitStatus: "completed",
+                appSubmittedAt: Date.now(),
+                approvalStatus: "pending",
+            },
+        })
+        setSubmitting(false)
+        setSubmitted(true)
     }
 
     if (submitted) {
-        return <SuccessScreen appId={appId.current} user={user} />
-    }
-
-    const handleSubmit = async () => {
-        setSubmitting(true)
-        try {
-            // 1. Update timeline simulation
-            await updateUser({
-                selectedLoan: user.selectedLoan,
-                timelineSimulation: {
-                    ...(user.timelineSimulation || {}),
-                    appSubmitStatus: "completed",
-                    appSubmittedAt: Date.now(),
-                    approvalStatus: "pending",
-                    approvedAt: undefined,
-                }
-            })
-
-            // 2. Fire Twilio WhatsApp message
-            await triggerTwilio("application_submitted", user, {
-                amount: user.loanAmount,
-                bankName: "HDFC Bank",
-            })
-        } catch (e) {
-            console.error("Submission error:", e)
-        } finally {
-            setSubmitting(false)
-            setSubmitted(true)
-        }
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EBF4FF] to-white px-4">
+                <div className="text-center max-w-md">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle2 className="w-10 h-10 text-green-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+                    <p className="text-gray-600 mb-6">
+                        Your HDFC Bank Personal Loan application has been submitted. Reference ID:{" "}
+                        <strong className="text-[#004C8F]">HDFC-{Date.now().toString(36).toUpperCase()}</strong>
+                    </p>
+                    <p className="text-sm text-gray-500 mb-8">
+                        HDFC Bank will contact you within 2 business days on your registered mobile number.
+                    </p>
+                    <Link href="/dashboard/timeline">
+                        <button className="bg-[#004C8F] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#00396E] transition-colors">
+                            Track Application Status →
+                        </button>
+                    </Link>
+                </div>
+            </div>
+        )
     }
 
     return (
-        <div className="min-h-screen bg-[#f0f4f8]">
-            {/* HDFC Top Bar */}
-            <div className="bg-[#1a3a6c] text-white print:hidden">
-                <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <Link href="/dashboard/loans" className="flex items-center gap-2 text-white/80 hover:text-white text-sm">
-                        <ArrowLeft className="w-4 h-4" /> Back to Loan Offers
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-[#d41e29] rounded-sm flex items-center justify-center">
-                            <span className="text-white font-black text-sm">H</span>
-                        </div>
-                        <div>
-                            <div className="text-white font-black text-sm leading-none">HDFC BANK</div>
-                            <div className="text-white/60 text-xs leading-none">Loan Application Portal</div>
-                        </div>
-                    </div>
-                    <button onClick={() => window.print()} className="flex items-center gap-2 text-sm text-white/80 hover:text-white border border-white/30 rounded px-3 py-1.5 hover:bg-white/10">
-                        <Download className="w-3.5 h-3.5" /> Print
-                    </button>
-                </div>
-            </div>
-
-            {/* Doc Status Banner */}
-            <div className="bg-green-600 text-white print:hidden">
-                <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span className="font-semibold">All {REQUIRED_DOCS.length} required documents verified</span>
-                    <span className="text-green-100 ml-1">— You are cleared to apply!</span>
-                </div>
-            </div>
-
-            {/* Progress Steps */}
-            <div className="bg-white border-b border-gray-200 print:hidden">
-                <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3 text-xs">
-                    {[
-                        { n: 1, label: "Documents Verified", done: true },
-                        { n: 2, label: "Review Form", done: false, active: true },
-                        { n: 3, label: "Submit", done: false },
-                    ].map(s => (
-                        <div key={s.n} className="flex items-center gap-2">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${s.done ? "bg-green-600 text-white" : s.active ? "bg-[#d41e29] text-white" : "bg-gray-200 text-gray-500"}`}>
-                                {s.done ? <CheckCircle2 className="w-4 h-4" /> : s.n}
-                            </div>
-                            <span className={s.done ? "text-green-700 font-semibold" : s.active ? "text-[#d41e29] font-semibold" : "text-gray-400"}>{s.label}</span>
-                            {s.n < 3 && <div className="w-8 h-0.5 bg-gray-200" />}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Pre-fill notice */}
-            <div className="max-w-5xl mx-auto px-4 pt-5 print:hidden">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 mb-4 text-sm">
-                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                        <p className="font-semibold text-amber-800">Pre-filled from your ArthAstra profile</p>
-                        <p className="text-xs text-amber-700 mt-0.5">Review your details carefully before submitting. Reference: <strong>{appId.current}</strong></p>
-                    </div>
-                </div>
-            </div>
-
-            {/* ─── APPLICATION FORM ─── */}
-            <div className="max-w-5xl mx-auto px-4 pb-10">
-                <div className="bg-white shadow-lg border border-[#c8d6e5]">
-
-                    {/* PART A — Personal */}
-                    <div className="p-6 border-b-2 border-[#c8d6e5]">
-                        <div className="flex items-start justify-between mb-5">
-                            <div>
-                                <h1 className="text-sm font-bold text-[#1a3a6c] uppercase tracking-wide">Individual Loan Application Form</h1>
-                                <p className="text-[11px] text-[#d41e29] font-semibold mt-0.5">FILL ALL FIELDS IN CAPITAL LETTERS</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="bg-[#1a3a6c] text-white text-xs font-bold px-3 py-1 rounded">PART A ①</span>
-                                <div className="flex items-center gap-1">
-                                    <div className="w-7 h-7 bg-[#d41e29] rounded-sm flex items-center justify-center"><span className="text-white font-black text-sm">H</span></div>
-                                    <div><div className="text-[#1a3a6c] text-xs font-black">HDFC</div><div className="text-[#1a3a6c] text-[10px] font-semibold">BANK</div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Photo Box */}
-                        <div className="flex gap-4 mb-4">
-                            <div className="w-24 h-32 border-2 border-dashed border-[#1a3a6c] flex items-center justify-center text-center p-2 bg-gray-50 flex-shrink-0">
-                                <div><User className="w-7 h-7 text-[#1a3a6c] mx-auto mb-1" /><p className="text-[9px] text-[#1a3a6c] font-semibold">PASSPORT SIZE PHOTOGRAPH</p></div>
-                            </div>
-                            <div className="flex-1 flex flex-col gap-2">
-                                <div className="bg-[#eef4fc] border border-[#c8d6e5] rounded p-2">
-                                    <p className="text-[10px] text-[#1a3a6c] font-bold uppercase mb-1">HDFC Bank Customer ID</p>
-                                    <div className="flex gap-1">{Array(10).fill(0).map((_, i) => <div key={i} className="w-7 h-6 border border-[#1a3a6c] text-[10px] flex items-center justify-center" />)}</div>
-                                </div>
-                                <div className="bg-green-50 border border-green-200 rounded p-2">
-                                    <p className="text-[11px] text-green-700 font-bold flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> All documents verified • Application cleared</p>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">Ref: {appId.current}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Section title="Personal Details" icon={<User className="w-3.5 h-3.5" />} />
-                        <div className="border border-[#c8d6e5]">
-                            <div className="grid grid-cols-5 bg-[#1a3a6c] text-white text-[10px] font-bold"><div className="col-span-2 py-1.5 px-3 border-r border-[#2a5a9c]">FIELD</div><div className="col-span-3 py-1.5 px-3">APPLICANT DETAILS</div></div>
-                            <Field label="Full Name" value={user.name || ""} />
-                            <Field label="Mobile No." value={user.phone || ""} highlight />
-                            <Field label="Age" value={user.age ? `${user.age} Years` : ""} />
-                            <Field label="City / Town" value={user.city || ""} highlight />
-                            <Field label="State" value={user.state || ""} />
-                            <Field label="Preferred Language" value={({ en: "English", hi: "Hindi", mr: "Marathi", ta: "Tamil", bn: "Bengali" }[user.language || "en"] || "English")} highlight />
-                        </div>
-                    </div>
-
-                    {/* PART B — Employment */}
-                    <div className="p-6 border-b-2 border-[#c8d6e5]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-bold text-[#1a3a6c] uppercase">Employment & Financial Details</h2>
-                            <span className="bg-[#1a3a6c] text-white text-xs font-bold px-3 py-1 rounded">PART B ②</span>
-                        </div>
-
-                        <Section title="Employment Information" icon={<Briefcase className="w-3.5 h-3.5" />} />
-                        <div className="border border-[#c8d6e5] mb-4">
-                            <div className="grid grid-cols-5 bg-[#1a3a6c] text-white text-[10px] font-bold"><div className="col-span-2 py-1.5 px-3 border-r border-[#2a5a9c]">FIELD</div><div className="col-span-3 py-1.5 px-3">DETAILS</div></div>
-                            <Field label="Employment Type" value={empLabel[user.employmentType] || user.employmentType || ""} />
-                            <Field label="Employer / Company" value={user.companyName || "Not Provided"} highlight />
-                            <Field label="Employment Tenure" value={tenureLabel[user.employmentTenure] || user.employmentTenure || ""} />
-                            <Field label="Monthly Income (Gross)" value={fmt(user.monthlyIncome)} highlight />
-                            <Field label="Existing Monthly EMI" value={fmt(user.existingEMI) || "NIL"} />
-                            <Field label="Monthly Expenses" value={fmt(user.monthlyExpenses) || "NIL"} highlight />
-                            <Field label="Net Disposable Income" value={user.monthlyIncome ? fmt(user.monthlyIncome - (user.existingEMI || 0) - (user.monthlyExpenses || 0)) : "—"} />
-                            <Field label="Savings Range" value={user.savingsRange || "Not Provided"} highlight />
-                        </div>
-
-                        <Section title="Address" icon={<MapPin className="w-3.5 h-3.5" />} />
-                        <div className="border border-[#c8d6e5]">
-                            <div className="grid grid-cols-5 bg-[#1a3a6c] text-white text-[10px] font-bold"><div className="col-span-2 py-1.5 px-3 border-r border-[#2a5a9c]">FIELD</div><div className="col-span-3 py-1.5 px-3">DETAILS</div></div>
-                            <Field label="Town / City" value={user.city || ""} />
-                            <Field label="State" value={user.state || ""} highlight />
-                            <Field label="Contact No." value={user.phone || ""} />
-                        </div>
-                    </div>
-
-                    {/* PART C — Loan */}
-                    <div className="p-6 border-b-2 border-[#c8d6e5]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-bold text-[#1a3a6c] uppercase">Loan Requirement</h2>
-                            <span className="bg-[#1a3a6c] text-white text-xs font-bold px-3 py-1 rounded">PART C ③</span>
-                        </div>
-
-                        <Section title="Loan Details" />
-                        <div className="border border-[#c8d6e5] mb-4">
-                            <div className="grid grid-cols-5 bg-[#1a3a6c] text-white text-[10px] font-bold"><div className="col-span-2 py-1.5 px-3 border-r border-[#2a5a9c]">FIELD</div><div className="col-span-3 py-1.5 px-3">DETAILS</div></div>
-                            <Field label="Purpose of Loan" value={purposeLabel[user.loanPurpose] || user.loanPurpose || "Personal Loan"} />
-                            <Field label="Loan Amount (₹)" value={fmt(user.loanAmount)} highlight />
-                            <Field label="Preferred Tenure (Years)" value={user.tenure ? `${user.tenure} Years` : "—"} />
-                            <Field label="Preferred Max EMI" value={fmt(user.preferredEMI)} highlight />
-                            <Field label="Rate Option" value="Floating (linked to HRBLR)" />
-                        </div>
-
-                        <Section title="Credit Information" />
-                        <div className="border border-[#c8d6e5]">
-                            <div className="grid grid-cols-5 bg-[#1a3a6c] text-white text-[10px] font-bold"><div className="col-span-2 py-1.5 px-3 border-r border-[#2a5a9c]">FIELD</div><div className="col-span-3 py-1.5 px-3">DETAILS</div></div>
-                            <Field label="Credit History Exists?" value={user.hasCreditHistory ? "Yes" : "No"} />
-                            <Field label="CIBIL Score (Approximate)" value={user.creditScore ? String(user.creditScore) : "Not Provided"} highlight />
-                            <Field label="Credit Band" value={
-                                !user.creditScore ? "—" :
-                                    user.creditScore >= 750 ? "EXCELLENT (750+)" :
-                                        user.creditScore >= 700 ? "GOOD (700–749)" :
-                                            user.creditScore >= 650 ? "FAIR (650–699)" : "BELOW AVERAGE"
-                            } />
-                        </div>
-                    </div>
-
-                    {/* PART D — Declaration */}
-                    <div className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-bold text-[#1a3a6c] uppercase">Declaration & Signature</h2>
-                            <span className="bg-[#1a3a6c] text-white text-xs font-bold px-3 py-1 rounded">PART D ④</span>
-                        </div>
-
-                        <div className="bg-gray-50 border border-[#c8d6e5] rounded p-4 mb-5">
-                            <h4 className="text-[10px] font-bold text-[#1a3a6c] uppercase mb-3 tracking-wider">Declaration</h4>
-                            <ol className="space-y-1.5 text-[11px] text-gray-700 list-decimal pl-4">
-                                <li>I/We declare that all particulars and information given in this form are true, correct and complete.</li>
-                                <li>I/We confirm that funds shall be used for the stated purpose only and not for speculative purposes.</li>
-                                <li>I/We authorise HDFC Bank to make any enquiries regarding my/our application with credit bureaus.</li>
-                                <li>I/We have read and understood all terms and conditions of availing finance from HDFC Bank.</li>
-                                <li>I/We authorise HDFC Bank to conduct such credit checks as considered necessary.</li>
-                                <li>HDFC Bank reserves the right to retain photographs and documents submitted with this application.</li>
-                            </ol>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 mt-6">
-                            <div>
-                                <div className="border-b-2 border-[#1a3a6c] pb-1 mb-1">&nbsp;</div>
-                                <p className="text-xs text-gray-600 text-center">Applicant's Signature</p>
-                                <p className="text-[11px] text-[#1a3a6c] font-semibold text-center mt-1">{user.name || "Applicant"}</p>
+        <div className="min-h-screen bg-[#F0F6FF]">
+            {/* ── HDFC Header ── */}
+            <div className="bg-gradient-to-r from-[#004C8F] to-[#0060B3] text-white shadow-xl">
+                <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link href="/dashboard/loans" className="text-white/80 hover:text-white transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            {/* HDFC Logo-style badge */}
+                            <div className="bg-white rounded px-3 py-1 flex items-center gap-2">
+                                <span className="text-[#004C8F] font-black text-lg tracking-tighter">H</span>
+                                <div className="h-5 w-px bg-gray-300" />
+                                <span className="text-[#E31837] font-black text-xs tracking-widest">HDFC</span>
+                                <span className="text-[#004C8F] font-bold text-xs">BANK</span>
                             </div>
                             <div>
-                                <div className="border-b-2 border-[#c8d6e5] pb-1 mb-1">&nbsp;</div>
-                                <p className="text-xs text-gray-500 text-center">Co-applicant's Signature (if applicable)</p>
+                                <p className="text-white font-bold text-lg leading-none">Personal Loan — Premium</p>
+                                <p className="text-blue-200 text-xs mt-0.5">Pre-filled Application · 10.5% p.a.</p>
                             </div>
                         </div>
+                    </div>
+                    <div className="hidden md:flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1.5 text-green-300">
+                            <ShieldCheck className="w-4 h-4" />
+                            <span className="font-medium">Secure &amp; Encrypted</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-blue-200">
+                            <Clock className="w-4 h-4" />
+                            <span>2-day approval</span>
+                        </div>
+                    </div>
+                </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-4 text-[11px]">
-                            <div className="bg-[#eef4fc] border border-[#c8d6e5] rounded p-3">
-                                <p className="text-[#1a3a6c] font-bold mb-1">Date:</p>
-                                <p className="text-gray-700 font-mono">{new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                {/* Info bar */}
+                <div className="bg-[#E31837] px-4 py-2">
+                    <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-white font-medium">
+                        <span>INDIVIDUAL HOUSING AND LOAN APPLICATION FORM — PRE-FILLED FROM YOUR ArthAstra PROFILE</span>
+                        <span>PART-A</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Offer Summary Strip ── */}
+            <div className="max-w-5xl mx-auto px-4 mt-6">
+                <div className="bg-white rounded-2xl shadow-lg border border-[#B8D4EE] overflow-hidden mb-6">
+                    <div className="bg-gradient-to-r from-[#004C8F] to-[#0073CF] p-5 text-white">
+                        <p className="text-sm text-blue-200 mb-1">Your Personalised Offer</p>
+                        <div className="flex flex-wrap gap-8 items-end">
+                            <div>
+                                <p className="text-xs text-blue-200">Loan Amount</p>
+                                <p className="text-3xl font-black">{fmt(loanAmount)}</p>
                             </div>
-                            <div className="bg-[#eef4fc] border border-[#c8d6e5] rounded p-3">
-                                <p className="text-[#1a3a6c] font-bold mb-1">Place:</p>
-                                <p className="text-gray-700">{user.city || "—"}</p>
+                            <div>
+                                <p className="text-xs text-blue-200">Interest Rate</p>
+                                <p className="text-3xl font-black">{rate}% <span className="text-base font-semibold opacity-80">p.a.</span></p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-blue-200">Monthly EMI</p>
+                                <p className="text-3xl font-black">{fmt(emi)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-blue-200">Tenure</p>
+                                <p className="text-3xl font-black">{tenure} <span className="text-base font-semibold opacity-80">yrs</span></p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-blue-200">Processing Fee</p>
+                                <p className="text-2xl font-black">{fmt(processingFee)}</p>
                             </div>
                         </div>
-
-                        <p className="text-center text-[10px] text-gray-400 mt-4 border-t pt-3">
-                            Do not Sign this Form if it is Blank. Please ensure all sections are filled before signing.
+                    </div>
+                    <div className="px-5 py-3 bg-green-50 border-t border-green-100 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <p className="text-sm text-green-800 font-medium">
+                            AI Recommended · Highest approval odds based on your financial profile
                         </p>
                     </div>
                 </div>
+            </div>
 
-                {/* ─── Action Buttons ─── */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-4 print:hidden">
-                    <Link href="/dashboard/loans" className="flex items-center justify-center gap-2 flex-1 border-2 border-[#1a3a6c] text-[#1a3a6c] py-3.5 rounded-xl font-semibold hover:bg-[#eef4fc] transition-colors">
-                        <ArrowLeft className="w-4 h-4" /> Back to Offers
-                    </Link>
-                    <button onClick={() => window.print()} className="flex items-center justify-center gap-2 flex-1 border-2 border-gray-300 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
-                        <Download className="w-4 h-4" /> Download / Print
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        className="flex items-center justify-center gap-2 flex-1 bg-[#d41e29] hover:bg-[#b01520] text-white py-3.5 px-8 rounded-xl font-bold text-base shadow-xl shadow-[#d41e29]/30 transition-all disabled:opacity-60"
-                    >
-                        {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Submitting to HDFC...</> : <><CheckCircle2 className="w-5 h-5" /> Submit Application</>}
-                    </button>
+            {/* ── Application Form ── */}
+            <div className="max-w-5xl mx-auto px-4 pb-16 space-y-6">
+
+                {/* ── PART A: Personal Details ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Part A — Personal Details</SectionHeader>
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Full Name" value={u.name} wide />
+                        <FormField label="Age" value={u.age ? `${u.age} years` : undefined} />
+                        <FormField label="Mobile Number" value={u.phone} />
+                        <FormField label="Email ID" value={u.email} />
+                        <FormField label="City" value={cap(u.city)} />
+                        <FormField label="State / Union Territory" value={cap(u.state)} />
+                        <FormField label="Aadhaar / UID No." value="XXXX XXXX XXXX (masked)" />
+                        <FormField label="PAN No." value="Awaiting upload" />
+                    </div>
+
+                    {/* Address table */}
+                    <div className="border-t border-[#D0E4F5]">
+                        <SectionHeader>Permanent Address</SectionHeader>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-[#D0E4F5]">
+                                        <th className="text-left py-2 px-4 text-[11px] font-bold text-[#004C8F] uppercase">Field</th>
+                                        <th className="text-left py-2 px-4 text-[11px] font-bold text-[#004C8F] uppercase">Applicant</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <Row label="Full Name" value={u.name} />
+                                    <Row label="Town / City / Village" value={cap(u.city)} />
+                                    <Row label="State / Union Territory" value={cap(u.state)} />
+                                    <Row label="Contact No." value={u.phone} />
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                <p className="text-center text-xs text-gray-400 mt-3 print:hidden">
-                    A WhatsApp confirmation will be sent to <strong>{user.phone}</strong> upon submission via Twilio.
-                </p>
+
+                {/* ── PART B: Employment & Income Details ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Part B — Employment &amp; Income Details</SectionHeader>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <tbody>
+                                <Row label="Employment Type" value={cap(u.employmentType)} highlight />
+                                <Row label="Company / Business Name" value={u.companyName || "—"} />
+                                <Row label="Monthly Income" value={fmt(u.monthlyIncome)} highlight />
+                                <Row label="Employment Tenure" value={tenureLabel(u.employmentTenure)} />
+                                <Row label="Occupation" value={cap(u.employmentType)} />
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="border-t border-[#D0E4F5]">
+                        <SectionHeader>Past Employment / Business Details</SectionHeader>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-[#D0E4F5]">
+                                        <th className="py-2 px-4 text-left text-[11px] font-bold text-[#004C8F] uppercase">Employer / Business</th>
+                                        <th className="py-2 px-4 text-left text-[11px] font-bold text-[#004C8F] uppercase">Designation</th>
+                                        <th className="py-2 px-4 text-left text-[11px] font-bold text-[#004C8F] uppercase">Tenure</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="border-b border-[#D0E4F5]">
+                                        <td className="py-3 px-4 text-gray-900 font-medium">{u.companyName || "—"}</td>
+                                        <td className="py-3 px-4 text-gray-700">{cap(u.employmentType)}</td>
+                                        <td className="py-3 px-4 text-gray-700">{tenureLabel(u.employmentTenure)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── PART C: Financial Information ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Part C — Financial Information (Savings &amp; Investments)</SectionHeader>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-[#D0E4F5]">
+                                    <th className="py-2 px-4 text-left text-[11px] font-bold text-[#004C8F] uppercase">Particulars</th>
+                                    <th className="py-2 px-4 text-left text-[11px] font-bold text-[#004C8F] uppercase">Applicant (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <Row label="Savings Range" value={savingsLabel(u.savingsRange)} />
+                                <Row label="Monthly Income" value={fmt(u.monthlyIncome)} highlight />
+                                <Row label="Existing Monthly EMI Obligations" value={fmt(u.existingEMI)} />
+                                <Row label="Monthly Living Expenses" value={fmt(u.monthlyExpenses)} />
+                                <Row label="Has Credit History" value={u.hasCreditHistory === true ? "Yes" : u.hasCreditHistory === false ? "No" : "—"} />
+                                <Row label="Approximate Credit Score" value={u.creditScore ? `${u.creditScore}` : "—"} highlight />
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* ── PART D: Loan Requested ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Part D — Loan Requested</SectionHeader>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <tbody>
+                                <Row label="Purpose of Loan" value={cap(u.loanPurpose)} highlight />
+                                <Row label="Amount Requested (₹)" value={fmt(loanAmount)} highlight />
+                                <Row label="Preferred Tenure" value={tenure ? `${tenure} Years` : "—"} highlight />
+                                <Row label="Your Preferred Max EMI (₹)" value={fmt(u.preferredEMI)} />
+                                <Row label="HDFC Offered Rate of Interest" value={`${rate}% per annum`} highlight />
+                                <Row label="Calculated Monthly EMI (₹)" value={fmt(emi)} highlight />
+                                <Row label="Processing Fee (1.5%)" value={fmt(processingFee)} />
+                                <Row label="Total Repayment Amount (₹)" value={fmt(emi * months)} />
+                                <Row label="Total Interest Payable (₹)" value={fmt(emi * months - loanAmount)} />
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Type of Loan */}
+                    <div className="border-t border-[#D0E4F5]">
+                        <SectionHeader>Type of Loan</SectionHeader>
+                        <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {["Personal", "Home", "Education", "Car", "Business", "Medical", "Wedding", "Travel"].map((t) => (
+                                <div
+                                    key={t}
+                                    className={`border-2 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-all ${cap(u.loanPurpose) === t
+                                            ? "border-[#004C8F] bg-[#EBF4FF] text-[#004C8F]"
+                                            : "border-gray-200 text-gray-500"
+                                        }`}
+                                >
+                                    {t === cap(u.loanPurpose) && <span className="mr-1">✓</span>}
+                                    {t}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── PART E: Document Checklist ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Part E — Documents Submitted</SectionHeader>
+                    <div className="p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <p className="text-xs font-bold text-[#004C8F] mb-3 uppercase tracking-wide">Applicant — Identity &amp; Address</p>
+                                <div className="space-y-2">
+                                    {[
+                                        { doc: "Proof of Identity (Aadhaar)", status: "Pending Upload" },
+                                        { doc: "PAN Card", status: "Pending Upload" },
+                                        { doc: "Proof of Address", status: "Pending Upload" },
+                                        { doc: "Latest Passport Size Photo", status: "Pending Upload" },
+                                    ].map((d) => (
+                                        <div key={d.doc} className="flex items-center justify-between border border-dashed border-[#B8D4EE] rounded-lg px-3 py-2">
+                                            <span className="text-xs text-gray-700">{d.doc}</span>
+                                            <span className="text-xs text-amber-600 font-semibold">{d.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-[#004C8F] mb-3 uppercase tracking-wide">Income &amp; Employment Proof</p>
+                                <div className="space-y-2">
+                                    {[
+                                        { doc: "Last 3 Months Salary Slips", status: u.employmentType === "salaried" ? "Required" : "N/A" },
+                                        { doc: "Bank Statement (6 months)", status: "Required" },
+                                        { doc: "IT Returns / Form 16", status: u.employmentType !== "student" && u.employmentType !== "unemployed" ? "Required" : "N/A" },
+                                        { doc: "Business Registration (if self-employed)", status: u.employmentType === "self_employed" ? "Required" : "N/A" },
+                                    ].map((d) => (
+                                        <div key={d.doc} className={`flex items-center justify-between border rounded-lg px-3 py-2 ${d.status === "N/A" ? "border-gray-100 opacity-50" : "border-dashed border-[#B8D4EE]"}`}>
+                                            <span className="text-xs text-gray-700">{d.doc}</span>
+                                            <span className={`text-xs font-semibold ${d.status === "N/A" ? "text-gray-400" : "text-amber-600"}`}>{d.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Declaration ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] overflow-hidden">
+                    <SectionHeader>Declaration by Applicant</SectionHeader>
+                    <div className="p-5 space-y-3">
+                        <div className="bg-[#FFF8EC] border border-amber-200 rounded-lg p-4">
+                            <p className="text-xs text-gray-700 leading-relaxed">
+                                I/We declare that we are citizens of India and all the particulars and information given in the application form
+                                are true, correct, and complete. I/We confirm that the funds shall be used for the stated purpose and will not be
+                                used for speculative or anti-social purposes. I/We authorise HDFC Bank to make any enquiries regarding my/our
+                                application, including with other finance companies/registered credit bureaus.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <input type="checkbox" id="declare" className="w-4 h-4 accent-[#004C8F]" defaultChecked />
+                            <label htmlFor="declare" className="text-xs text-gray-700 font-medium">
+                                I agree to the above declaration and authorise HDFC Bank to process my application.
+                            </label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <input type="checkbox" id="kyc" className="w-4 h-4 accent-[#004C8F]" defaultChecked />
+                            <label htmlFor="kyc" className="text-xs text-gray-700 font-medium">
+                                I consent to receiving information from HDFC Bank through Central KYC Registry via SMS/email.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Action Buttons ── */}
+                <div className="bg-white rounded-2xl shadow border border-[#B8D4EE] p-6">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
+                            <span>256-bit SSL encrypted · Your data is safe with HDFC Bank</span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <button
+                                onClick={() => { }}
+                                className="flex items-center justify-center gap-2 border-2 border-[#004C8F] text-[#004C8F] font-semibold px-6 py-3 rounded-xl hover:bg-[#EBF4FF] transition-colors text-sm"
+                            >
+                                <Download className="w-4 h-4" />
+                                Download PDF
+                            </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={submitting}
+                                className="flex items-center justify-center gap-2 bg-[#E31837] text-white font-bold px-8 py-3 rounded-xl hover:bg-[#B8102C] transition-colors text-sm shadow-lg shadow-red-200 disabled:opacity-70"
+                            >
+                                {submitting ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Submitting…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send className="w-4 h-4" />
+                                        Submit Application to HDFC Bank
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                    <p className="text-xs text-center text-gray-400 mt-4">
+                        Do not sign this form if blank. Ensure all relevant sections and documents are completely filled before submitting.<br />
+                        HDFC Bank will contact you at <strong>{u.phone || "your registered number"}</strong> within 2 business days.
+                    </p>
+                </div>
+
             </div>
         </div>
     )

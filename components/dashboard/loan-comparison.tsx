@@ -160,31 +160,27 @@ export default function LoanComparison() {
                 <div className="lg:col-span-3 flex flex-col gap-3">
                   <Button
                     onClick={() => {
-                      updateUser({
-                        selectedLoan: loan,
-                        timelineSimulation: {
-                          ...user.timelineSimulation,
-                          appSubmitStatus: 'completed',
-                          appSubmittedAt: Date.now(),
-                          approvalStatus: 'pending',
-                          approvedAt: undefined
-                        }
-                      })
-                      // HDFC → dedicated bank portal; others → timeline
                       if (loan.bankName === "HDFC Bank") {
+                        // Go to the HDFC portal — data is already in user context
                         window.location.href = "/dashboard/apply/hdfc"
                       } else {
+                        updateUser({
+                          selectedLoan: loan,
+                          timelineSimulation: {
+                            ...user.timelineSimulation,
+                            appSubmitStatus: 'completed',
+                            appSubmittedAt: Date.now(),
+                            approvalStatus: 'pending',
+                            approvedAt: undefined,
+                          },
+                        })
                         window.location.href = "/dashboard/timeline"
                       }
                     }}
-                    className={`w-full text-white shadow-lg h-11 ${loan.bankName === "HDFC Bank"
-                        ? "bg-[#d41e29] hover:bg-[#b01520] shadow-red-200"
-                        : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
-                      }`}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 h-11"
                   >
-                    {loan.bankName === "HDFC Bank" ? "🏦 Apply at HDFC" : getTranslation(language, "applyNow")}
+                    {getTranslation(language, "applyNow")}
                   </Button>
-
                   <Button
                     onClick={() => setExpandedLoan(expandedLoan === index ? null : index)}
                     variant="outline"
