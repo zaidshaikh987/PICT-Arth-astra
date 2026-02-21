@@ -9,7 +9,6 @@ import Step1BasicProfile from "./steps/step-1-basic-profile"
 import Step2Employment from "./steps/step-2-employment"
 import Step3Financial from "./steps/step-3-financial"
 import Step4LoanRequirement from "./steps/step-4-loan-requirement"
-import Step5Enhancements from "./steps/step-5-enhancements"
 import { useVoiceAssistant } from "@/lib/voice-assistant-context"
 
 const onboardingImages = [
@@ -24,46 +23,10 @@ import type { OnboardingData } from "./types"
 const stepFields = {
   1: [
     {
-      id: "name",
-      name: "Full Name",
-      type: "text" as const,
-      question: { en: "What is your full name?", hi: "आपका पूरा नाम क्या है?", mr: "तुमचे पूर्ण नाव काय आहे?" },
-    },
-    {
-      id: "age",
-      name: "Age",
-      type: "number" as const,
-      question: { en: "How old are you?", hi: "आपकी उम्र क्या है?", mr: "तुमचे वय किती आहे?" },
-      min: 18,
-      max: 100,
-    },
-    {
       id: "phone",
       name: "Phone Number",
       type: "text" as const,
       question: { en: "What is your phone number?", hi: "आपका फोन नंबर क्या है?" },
-    },
-    {
-      id: "city",
-      name: "City",
-      type: "text" as const,
-      question: { en: "Which city do you live in?", hi: "आप किस शहर में रहते हैं?" },
-    },
-    {
-      id: "state",
-      name: "State",
-      type: "select" as const,
-      question: { en: "Which state are you from?", hi: "आप किस राज्य से हैं?" },
-      options: [
-        { value: "Maharashtra", label: "Maharashtra" },
-        { value: "Karnataka", label: "Karnataka" },
-        { value: "Delhi", label: "Delhi" },
-        { value: "Tamil Nadu", label: "Tamil Nadu" },
-        { value: "Gujarat", label: "Gujarat" },
-        { value: "West Bengal", label: "West Bengal" },
-        { value: "Rajasthan", label: "Rajasthan" },
-        { value: "Uttar Pradesh", label: "Uttar Pradesh" },
-      ],
     },
   ],
   2: [
@@ -77,22 +40,24 @@ const stepFields = {
         { value: "self_employed", label: "Self Employed" },
         { value: "freelancer", label: "Freelancer" },
         { value: "student", label: "Student" },
+        { value: "unemployed", label: "Unemployed" },
       ],
     },
     {
       id: "monthlyIncome",
       name: "Monthly Income",
       type: "number" as const,
-      question: { en: "What is your monthly income in rupees?", hi: "आपकी मासिक आय कितनी है?", mr: "तुमची मासिक उत्पन्न किती आहे?" },
-      min: 10000,
+      question: { en: "What is your monthly income in rupees? Say zero if unemployed or student.", hi: "आपकी मासिक आय कितनी है? बेरोजगार हों तो शून्य बोलें।", mr: "तुमची मासिक उत्पन्न किती आहे? बेरोजगार असाल तर शून्य सांगा." },
+      min: 0,
       max: 500000,
     },
     {
       id: "employmentTenure",
       name: "Employment Tenure",
       type: "select" as const,
-      question: { en: "How long have you been employed?", hi: "आप कितने समय से कार्यरत हैं?", mr: "तुम कितक्या काळापासून कार्यरत आहात?" },
+      question: { en: "How long have you been employed? Say 'not applicable' if unemployed or student.", hi: "आप कितने समय से कार्यरत हैं?", mr: "तुम कितक्या काळापासून कार्यरत आहात?" },
       options: [
+        { value: "none", label: "Not applicable" },
         { value: "<6_months", label: "Less than 6 months" },
         { value: "6m-1yr", label: "6 months to 1 year" },
         { value: "1-2yr", label: "1 to 2 years" },
@@ -104,7 +69,7 @@ const stepFields = {
       id: "companyName",
       name: "Company Name",
       type: "text" as const,
-      question: { en: "What is your company name?", hi: "आपकी कंपनी का नाम क्या है?", mr: "तुमच्या कंपनीचे नाव काय आहे?" },
+      question: { en: "What is your company name? Skip if not applicable.", hi: "आपकी कंपनी का नाम क्या है?", mr: "तुमच्या कंपनीचे नाव काय आहे?" },
     },
   ],
   3: [
@@ -197,34 +162,6 @@ const stepFields = {
       max: 10,
     },
   ],
-  5: [
-    {
-      id: "isJointApplication",
-      name: "Joint Application",
-      type: "switch" as const,
-      question: { en: "Is this a joint application? Say yes or no.", hi: "क्या यह संयुक्त आवेदन है? हां या नहीं बोलें।", mr: "हे संयुक्त अर्ज आहे का? हो किंवा नाही सांगा." },
-    },
-    {
-      id: "coborrowerIncome",
-      name: "Co-borrower Income",
-      type: "number" as const,
-      question: { en: "What is your co-borrower's monthly income?", hi: "आपके सह-उधारकर्ता की मासिक आय कितनी है?", mr: "तुमच्या सह-कर्जदाराची मासिक उत्पन्न किती आहे?" },
-      min: 0,
-      max: 500000,
-    },
-    {
-      id: "coborrowerRelationship",
-      name: "Relationship",
-      type: "select" as const,
-      question: { en: "What is your relationship with the co-borrower?", hi: "सह-उधारकर्ता से आपका क्या संबंध है?", mr: "सह-कर्जदाराशी तुमचा संबंध काय आहे?" },
-      options: [
-        { value: "spouse", label: "Spouse" },
-        { value: "parent", label: "Parent" },
-        { value: "sibling", label: "Sibling" },
-        { value: "friend", label: "Friend" },
-      ],
-    },
-  ],
 }
 
 export default function OnboardingWizard() {
@@ -251,7 +188,7 @@ export default function OnboardingWizard() {
     setIsOpen,
   } = useVoiceAssistant()
 
-  const totalSteps = 5
+  const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
 
   // Image carousel
@@ -366,8 +303,6 @@ export default function OnboardingWizard() {
         return <Step3Financial data={formData} updateData={updateFormData} onNext={handleNext} />
       case 4:
         return <Step4LoanRequirement data={formData} updateData={updateFormData} onNext={handleNext} />
-      case 5:
-        return <Step5Enhancements data={formData} updateData={updateFormData} onNext={handleNext} />
       default:
         return null
     }
@@ -509,11 +444,10 @@ export default function OnboardingWizard() {
                     Step {currentStep} of {totalSteps}
                   </span>
                   <h2 className="text-lg font-bold text-gray-900 mt-1">
-                    {currentStep === 1 && "Basic Profile"}
+                    {currentStep === 1 && "Quick Start"}
                     {currentStep === 2 && "Employment Details"}
                     {currentStep === 3 && "Financial Information"}
                     {currentStep === 4 && "Loan Requirements"}
-                    {currentStep === 5 && "Enhancements"}
                   </h2>
                 </div>
                 <span className="text-2xl font-bold text-blue-600">{Math.round(progress)}%</span>
