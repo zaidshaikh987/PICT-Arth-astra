@@ -162,22 +162,29 @@ export default function LoanComparison() {
                     onClick={() => {
                       updateUser({
                         selectedLoan: loan,
-                        // Advance the timeline automatically or trigger submission state
                         timelineSimulation: {
                           ...user.timelineSimulation,
                           appSubmitStatus: 'completed',
                           appSubmittedAt: Date.now(),
-                          // Also clear future stages if restarting?
                           approvalStatus: 'pending',
                           approvedAt: undefined
                         }
                       })
-                      window.location.href = "/dashboard/timeline"
+                      // HDFC → dedicated bank portal; others → timeline
+                      if (loan.bankName === "HDFC Bank") {
+                        window.location.href = "/dashboard/apply/hdfc"
+                      } else {
+                        window.location.href = "/dashboard/timeline"
+                      }
                     }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 h-11"
+                    className={`w-full text-white shadow-lg h-11 ${loan.bankName === "HDFC Bank"
+                        ? "bg-[#d41e29] hover:bg-[#b01520] shadow-red-200"
+                        : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+                      }`}
                   >
-                    {getTranslation(language, "applyNow")}
+                    {loan.bankName === "HDFC Bank" ? "🏦 Apply at HDFC" : getTranslation(language, "applyNow")}
                   </Button>
+
                   <Button
                     onClick={() => setExpandedLoan(expandedLoan === index ? null : index)}
                     variant="outline"
