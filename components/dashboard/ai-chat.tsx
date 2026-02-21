@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useUser } from "@/lib/user-context"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,11 +12,12 @@ export default function AIChat() {
     {
       role: "assistant",
       content:
-        "Hello! I'm your LoanSaathi AI assistant. I can help you understand your loan eligibility, suggest improvements, and answer any questions about the lending process. How can I assist you today?",
+        "Hello! I'm your ArthAstra AI assistant. I can help you understand your loan eligibility, suggest improvements, and answer any questions about the lending process. How can I assist you today?",
     },
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { user } = useUser()
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -26,8 +28,7 @@ export default function AIChat() {
     setIsLoading(true)
 
     try {
-      const userProfile = localStorage.getItem("loanProfile")
-      const context = userProfile ? JSON.parse(userProfile) : null
+      const context = user || null
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -67,26 +68,25 @@ export default function AIChat() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <Sparkles className="w-8 h-8 text-emerald-600" />
+          <Sparkles className="w-8 h-8 text-blue-600" />
           AI Loan Assistant
         </h1>
         <p className="text-gray-600">Get instant answers to your loan questions</p>
       </div>
 
-      <Card className="border-2 border-emerald-100">
+      <Card className="border-2 border-blue-100">
         {/* Chat Messages */}
         <div className="h-[600px] overflow-y-auto p-6 space-y-4">
           {messages.map((message, index) => (
             <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               {message.role === "assistant" && (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-6 h-6 text-white" />
                 </div>
               )}
               <div
-                className={`max-w-[70%] p-4 rounded-2xl ${
-                  message.role === "user" ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-900"
-                }`}
+                className={`max-w-[70%] p-4 rounded-2xl ${message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
+                  }`}
               >
                 <p className="leading-relaxed">{message.content}</p>
               </div>
@@ -100,7 +100,7 @@ export default function AIChat() {
 
           {isLoading && (
             <div className="flex gap-3 justify-start">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <div className="bg-gray-100 p-4 rounded-2xl">
@@ -134,7 +134,7 @@ export default function AIChat() {
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="bg-emerald-600 hover:bg-emerald-700 h-12 px-6"
+              className="bg-blue-600 hover:bg-blue-700 h-12 px-6"
             >
               <Send className="w-5 h-5" />
             </Button>

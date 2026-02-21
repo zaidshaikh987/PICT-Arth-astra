@@ -53,7 +53,7 @@ export default function Step2Employment({ data, updateData, onNext }: Props) {
   }
 
   return (
-    <Card className="p-8 shadow-xl border-2 border-emerald-100">
+    <Card className="p-8 shadow-xl border-2 border-blue-100">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Employment Details</h2>
         <p className="text-gray-600">Help us understand your income stability</p>
@@ -70,16 +70,16 @@ export default function Step2Employment({ data, updateData, onNext }: Props) {
                 type="button"
                 onClick={() => updateData({ employmentType: type.value })}
                 className={`p-4 border-2 rounded-xl transition-all ${data.employmentType === type.value
-                    ? "border-emerald-500 bg-emerald-50 shadow-md"
-                    : "border-gray-200 hover:border-emerald-200 hover:bg-gray-50"
+                    ? "border-blue-500 bg-blue-50 shadow-md"
+                    : "border-gray-200 hover:border-blue-200 hover:bg-gray-50"
                   }`}
               >
                 <type.icon
-                  className={`w-8 h-8 mx-auto mb-2 ${data.employmentType === type.value ? "text-emerald-600" : "text-gray-400"
+                  className={`w-8 h-8 mx-auto mb-2 ${data.employmentType === type.value ? "text-blue-600" : "text-gray-400"
                     }`}
                 />
                 <span
-                  className={`text-sm font-medium ${data.employmentType === type.value ? "text-emerald-700" : "text-gray-700"
+                  className={`text-sm font-medium ${data.employmentType === type.value ? "text-blue-700" : "text-gray-700"
                     }`}
                 >
                   {type.label}
@@ -153,7 +153,7 @@ export default function Step2Employment({ data, updateData, onNext }: Props) {
         <Button
           type="submit"
           size="lg"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg font-semibold group"
+          className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold group"
         >
           Continue
           <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

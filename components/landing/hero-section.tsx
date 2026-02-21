@@ -16,7 +16,7 @@ const heroImages = [
 
 const floatingFeatures = [
   { icon: "🏠", label: "Home Loan", color: "from-blue-500 to-blue-600" },
-  { icon: "🚗", label: "Car Loan", color: "from-emerald-500 to-emerald-600" },
+  { icon: "🚗", label: "Car Loan", color: "from-blue-500 to-blue-600" },
   { icon: "💼", label: "Business Loan", color: "from-purple-500 to-purple-600" },
   { icon: "🎓", label: "Education Loan", color: "from-orange-500 to-orange-600" },
   { icon: "💳", label: "Personal Loan", color: "from-pink-500 to-pink-600" },
@@ -34,7 +34,7 @@ export default function HeroSection() {
   }, [])
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 min-h-screen">
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-700 min-h-screen">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div
@@ -92,7 +92,7 @@ export default function HeroSection() {
               <Link href="/onboarding">
                 <Button
                   size="lg"
-                  className="bg-white text-emerald-700 hover:bg-gray-50 px-8 py-6 text-lg font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all group"
+                  className="bg-white text-blue-700 hover:bg-gray-50 px-8 py-6 text-lg font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all group"
                 >
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -168,7 +168,7 @@ export default function HeroSection() {
               transition={{ delay: 0.6 }}
               className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-4 shadow-xl"
             >
-              <div className="text-3xl font-bold text-emerald-600">450M+</div>
+              <div className="text-3xl font-bold text-blue-600">450M+</div>
               <div className="text-sm text-gray-600">Indians Served</div>
             </motion.div>
           </motion.div>

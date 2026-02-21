@@ -1,14 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useUser } from "@/lib/user-context"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Bell, Lock, CreditCard, Mail, Phone, MapPin, MessageSquare } from "lucide-react"
+import { User, Bell, Lock, CreditCard, Mail, Phone, MapPin, MessageSquare, Moon, Sun, Laptop } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useTheme } from "next-themes"
 
 export default function SettingsPage() {
   const [userData, setUserData] = useState<any>(null)
@@ -19,21 +21,30 @@ export default function SettingsPage() {
     marketing: false,
   })
   const { toast } = useToast()
+  const { user, updateUser } = useUser()
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
-    const data = localStorage.getItem("onboardingData")
-    if (data) {
-      setUserData(JSON.parse(data))
+    if (user) {
+      setUserData({ ...user })
     }
-  }, [])
+  }, [user])
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (userData) {
-      localStorage.setItem("onboardingData", JSON.stringify(userData))
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully.",
-      })
+      try {
+        await updateUser(userData)
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been saved to the database.",
+        })
+      } catch {
+        toast({
+          title: "Save failed",
+          description: "Could not save your profile. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -47,7 +58,7 @@ export default function SettingsPage() {
   if (!userData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     )
   }
@@ -55,13 +66,14 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your account preferences and security</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage your account preferences and security</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
@@ -154,9 +166,38 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveProfile} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700">
                   Save Changes
                 </Button>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <Card className="p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">Appearance</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div
+                onClick={() => setTheme("light")}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 hover:bg-gray-50 ${theme === 'light' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
+              >
+                <Sun className="w-8 h-8 text-orange-500" />
+                <span className="font-medium text-gray-900">Light</span>
+              </div>
+              <div
+                onClick={() => setTheme("dark")}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 hover:bg-gray-800 ${theme === 'dark' ? 'border-blue-600 bg-gray-800' : 'border-gray-200'}`}
+              >
+                <Moon className="w-8 h-8 text-blue-500" />
+                <span className="font-medium text-gray-900 dark:text-gray-100">Dark</span>
+              </div>
+              <div
+                onClick={() => setTheme("system")}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 hover:bg-gray-50 ${theme === 'system' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
+              >
+                <Laptop className="w-8 h-8 text-gray-500" />
+                <span className="font-medium text-gray-900">System</span>
               </div>
             </div>
           </Card>
@@ -213,7 +254,7 @@ export default function SettingsPage() {
                   <Mail className="w-5 h-5 text-gray-600" />
                   <div>
                     <h4 className="font-semibold text-gray-900">Marketing Emails</h4>
-                    <p className="text-sm text-gray-600">Tips and offers from LoanSaathi</p>
+                    <p className="text-sm text-gray-600">Tips and offers from ArthAstra</p>
                   </div>
                 </div>
                 <Switch
@@ -256,7 +297,7 @@ export default function SettingsPage() {
                   Test WhatsApp
                 </Button>
 
-                <Button onClick={handleSaveNotifications} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={handleSaveNotifications} className="bg-blue-600 hover:bg-blue-700">
                   Save Preferences
                 </Button>
               </div>
@@ -268,9 +309,9 @@ export default function SettingsPage() {
           <Card className="p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-6">Security Settings</h3>
             <div className="space-y-6">
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Lock className="w-5 h-5 text-emerald-600" />
+                  <Lock className="w-5 h-5 text-blue-600" />
                   <h4 className="font-semibold text-gray-900">Your account is secure</h4>
                 </div>
                 <p className="text-sm text-gray-700">Two-factor authentication is enabled</p>
@@ -295,7 +336,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button className="bg-emerald-600 hover:bg-emerald-700">Update Password</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700">Update Password</Button>
               </div>
             </div>
           </Card>
@@ -323,11 +364,7 @@ export default function SettingsPage() {
                   variant="destructive"
                   onClick={() => {
                     if (confirm("Are you sure you want to reset?")) {
-                      localStorage.removeItem("onboardingData")
-                      localStorage.removeItem("loanProfile")
-                      localStorage.removeItem("onboardingStep")
-                      localStorage.removeItem("timelineSimulation")
-                      localStorage.removeItem("uploadedFiles")
+                      document.cookie = "userId=; path=/; max-age=0"
                       window.location.href = "/"
                     }
                   }}

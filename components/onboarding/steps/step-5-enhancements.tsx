@@ -34,7 +34,7 @@ export default function Step5Enhancements({ data, updateData, onNext }: Props) {
   }
 
   return (
-    <Card className="p-8 shadow-xl border-2 border-emerald-100">
+    <Card className="p-8 shadow-xl border-2 border-blue-100">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Boost Your Eligibility</h2>
         <p className="text-gray-600">Optional enhancements to increase approval odds</p>
@@ -42,7 +42,7 @@ export default function Step5Enhancements({ data, updateData, onNext }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Joint Application */}
-        <div className="bg-emerald-50 p-6 rounded-xl border-2 border-emerald-200">
+        <div className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
           <div className="flex items-center justify-between mb-4">
             <div>
               <Label htmlFor="joint" className="text-base font-semibold">
@@ -59,7 +59,7 @@ export default function Step5Enhancements({ data, updateData, onNext }: Props) {
 
           {/* Co-borrower Details (conditional) */}
           {data.isJointApplication && (
-            <div className="space-y-4 mt-4 pt-4 border-t border-emerald-300">
+            <div className="space-y-4 mt-4 pt-4 border-t border-blue-300">
               <div>
                 <Label htmlFor="coborrowerIncome" className="text-sm font-semibold">
                   Co-borrower Monthly Income
@@ -133,7 +133,7 @@ export default function Step5Enhancements({ data, updateData, onNext }: Props) {
         <Button
           type="submit"
           size="lg"
-          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 h-12 text-lg font-semibold group"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-12 text-lg font-semibold group"
         >
           <CheckCircle2 className="mr-2 w-5 h-5" />
           Check My Eligibility

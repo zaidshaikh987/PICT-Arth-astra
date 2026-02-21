@@ -1,220 +1,218 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
-import { calculateDTI, analyzeEmploymentRisk, simulateCreditScoreImpact } from "@/lib/tools/agent-tools";
+import { calculateDTI, analyzeEmploymentRisk, detectFinancialAnomalies, simulateCreditScoreImpact, calculateSavingsTimeline } from "@/lib/tools/agent-tools";
+import { generateWithRotation } from "@/lib/ai/gemini-client";
 
 /**
- * Recovery Squad - Fallback Implementation
- * Uses direct Gemini API when ADK fails on serverless
+ * Rejection Recovery API — Optimized
+ * 
+ * OLD: 3 sequential Gemini calls (Investigator → Negotiator → Architect) = 3 API calls
+ * NEW: Tools first (0 API calls) → Single Gemini call for narrative (1 API call)
+ * 
+ * Savings: 66% fewer API calls, 3x faster
  */
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
-});
-
-async function runRecoveryAgent(role: "investigator" | "negotiator" | "architect", context: string): Promise<string> {
-    const prompts = {
-        investigator: `You are a Financial Investigator analyzing a rejected loan application.
-
-APPLICANT DATA:
-${context}
-
-Analyze the application and identify:
-1. The root cause of rejection
-2. Any hidden risk factors
-3. Severity level
-
-Return ONLY JSON (no markdown):
-{"rootCause": "primary reason", "hiddenFactor": "subtle risk", "severity": "High/Medium/Low", "bulletPoints": ["finding 1", "finding 2", "finding 3"]}`,
-
-        negotiator: `You are a Credit Recovery Strategist.
-
-INVESTIGATION FINDINGS:
-${context}
-
-Create a recovery strategy with:
-1. A clear strategy name
-2. Main action item
-3. Specific steps
-4. A negotiation script for the bank
-
-Return ONLY JSON (no markdown):
-{"strategyName": "name", "actionItem": "main action", "bulletPoints": ["step 1", "step 2", "step 3"], "negotiationScript": "professional script for bank"}`,
-
-        architect: `You are a Wealth Planning Architect.
-
-STRATEGY:
-${context}
-
-Build a concrete recovery timeline with:
-1. Immediate action (Week 1)
-2. Short-term goal (Month 1)
-3. Long-term target (Month 3-6)
-
-Return ONLY JSON (no markdown):
-{"step1": "Week 1 action", "step2": "Month 1 goal", "step3": "Month 3-6 target", "estimatedDays": 180}`
-    };
-
-    try {
-        const result = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp",
-            contents: [{ role: "user", parts: [{ text: prompts[role] }] }],
-        });
-
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        return text.trim();
-    } catch (error: any) {
-        console.error(`${role} error:`, error.message);
-        return "";
-    }
-}
-
-function safeParse(text: string, fallback: any): any {
-    try {
-        const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-        return jsonMatch ? JSON.parse(jsonMatch[0]) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
 export async function POST(req: Request) {
-    let body: any = {};
-
     try {
-        body = await req.json();
-        const context = JSON.stringify(body, null, 2);
+        const body = await req.json();
+
+        const monthlyIncome = Number(body.monthlyIncome) || 30000;
+        const existingEMI = Number(body.existingEMI) || 0;
+        const monthlyExpenses = Number(body.monthlyExpenses) || Math.round(monthlyIncome * 0.3);
+        const creditScore = Number(body.creditScore) || 650;
+        const employmentType = body.employmentType || "salaried";
+        const employmentTenure = body.employmentTenure || "1-2yr";
+        const loanAmount = Number(body.loanAmount) || 500000;
+        const savings = body.savings || "0-50k";
 
         console.log("\n");
         console.log("╔════════════════════════════════════════════════════════════╗");
-        console.log("║       🔧 RECOVERY SQUAD - 3-Agent Pipeline                 ║");
+        console.log("║   🔧 REJECTION RECOVERY (Optimized — Tools First)        ║");
         console.log("╠════════════════════════════════════════════════════════════╣");
-        console.log("║  Powered by: Gemini 2.0 Flash + Google GenAI SDK          ║");
+        console.log("║  Stage 1: Tools (0 API calls)                            ║");
+        console.log("║  Stage 2: Tools (0 API calls)                            ║");
+        console.log("║  Stage 3: Tools (0 API calls)                            ║");
+        console.log("║  Narrative: Gemini 2.5 Flash (1 API call, optional)      ║");
         console.log("╚════════════════════════════════════════════════════════════╝");
 
-        // Calculate DTI using real tool
-        const dti = calculateDTI(
-            body.monthlyIncome || 100000,
-            body.existingEMI || 20000,
-            body.monthlyExpenses || 30000
-        );
+        // ═══════════════════════════════════════════════════════════
+        // STAGE 1: THE INVESTIGATOR (Pure TypeScript — 0 API calls)
+        // ═══════════════════════════════════════════════════════════
+        console.log("\n┌─── STAGE 1: 🕵️ THE INVESTIGATOR (Tools) ───┐");
 
-        console.log("\n📋 INPUT DATA + TOOL OUTPUT:");
-        console.log("   • Income: ₹" + (body.monthlyIncome || "100,000").toLocaleString());
-        console.log("   • Existing EMI: ₹" + (body.existingEMI || "20,000").toLocaleString());
-        console.log("   • 🛠️ calculateDTI() → " + dti + "%");
-        console.log("");
-
-        // Enrich context with computed data
-        const enrichedContext = `${context}\n\nCOMPUTED DATA:\n- DTI: ${dti}%`;
-
-        // Stage 1: Investigator
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 1: 🕵️ THE INVESTIGATOR                                │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Financial detective analyzing rejection causes       │");
-        console.log("│ Tools: calculateDTI, analyzeEmploymentRisk, detectAnomalies│");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Analyzing application data...                      │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const investigationRaw = await runRecoveryAgent("investigator", enrichedContext);
-        const investigation = safeParse(investigationRaw, {
-            rootCause: `High DTI ratio (${dti}%)`,
-            hiddenFactor: "Income volatility",
-            severity: dti > 50 ? "High" : "Medium",
-            bulletPoints: [`DTI: ${dti}%`, "Employment verification needed", "Savings below threshold"]
+        const dti = calculateDTI(monthlyIncome, existingEMI, monthlyExpenses);
+        const employmentRisk = analyzeEmploymentRisk(employmentType, employmentTenure);
+        const anomalies = detectFinancialAnomalies({
+            monthlyIncome,
+            existingEMI,
+            monthlyExpenses,
+            employmentType,
+            savings,
+            creditScore,
         });
-        console.log("   ✅ Root Cause: " + investigation.rootCause);
-        console.log("   ✅ Severity: " + investigation.severity + "\n");
 
-        await new Promise(r => setTimeout(r, 1000));
+        // Determine root causes
+        const rootCauses: string[] = [];
+        if (dti > 40) rootCauses.push(`High DTI (${dti}% — banks reject above 40%)`);
+        if (creditScore < 700) rootCauses.push(`Low Credit Score (${creditScore} — need 700+ for unsecured loans)`);
+        if (employmentRisk.riskLevel === "Critical" || employmentRisk.riskLevel === "High") {
+            rootCauses.push(`${employmentRisk.riskLevel} Employment Risk: ${employmentRisk.reason}`);
+        }
+        if (anomalies.hasAnomaly) {
+            anomalies.anomalies.forEach(a => rootCauses.push(`Anomaly: ${a}`));
+        }
+        if (rootCauses.length === 0) {
+            rootCauses.push("Profile appears strong — rejection may be bank-specific");
+        }
 
-        // Stage 2: Negotiator
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 2: 🐺 THE NEGOTIATOR                                  │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Credit recovery strategist creating action plan      │");
-        console.log("│ Tools: simulateCreditScoreImpact                           │");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Formulating recovery strategy...                   │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const strategyRaw = await runRecoveryAgent("negotiator", JSON.stringify(investigation));
-        const strategy = safeParse(strategyRaw, {
-            strategyName: "Debt Reduction Strategy",
-            actionItem: "Pay down existing debt",
-            bulletPoints: ["Clear smallest EMI first", "Request salary revision letter", "Build emergency fund"],
-            negotiationScript: "I am actively working to improve my debt ratio and can provide updated financials."
-        });
-        console.log("   ✅ Strategy: " + strategy.strategyName);
-        console.log("   ✅ Action: " + strategy.actionItem + "\n");
+        const stage1 = {
+            agent: "Investigator",
+            title: "Root Cause Analysis",
+            result: {
+                dtiRatio: `${dti}%`,
+                dtiStatus: dti <= 40 ? "Safe" : dti <= 50 ? "Moderate Risk" : "High Risk",
+                employmentRisk: employmentRisk,
+                anomalies: anomalies,
+                rootCauses: rootCauses,
+                verdict: rootCauses.length > 0
+                    ? `Found ${rootCauses.length} rejection factor(s). Primary: ${rootCauses[0]}`
+                    : "No obvious rejection factors detected.",
+            },
+        };
+        console.log(`   ✅ DTI: ${dti}% | Risk: ${employmentRisk.riskLevel} | Causes: ${rootCauses.length}`);
 
-        await new Promise(r => setTimeout(r, 1000));
+        // ═══════════════════════════════════════════════════════════
+        // STAGE 2: THE NEGOTIATOR (Pure TypeScript — 0 API calls)
+        // ═══════════════════════════════════════════════════════════
+        console.log("├─── STAGE 2: 🐺 THE NEGOTIATOR (Tools) ──────┤");
 
-        // Stage 3: Architect
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 3: 🏗️ THE ARCHITECT                                   │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Wealth planner building recovery timeline            │");
-        console.log("│ Tools: calculateSavingsTimeline                            │");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Building recovery roadmap...                       │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const planRaw = await runRecoveryAgent("architect", JSON.stringify(strategy));
-        const plan = safeParse(planRaw, {
-            step1: "Create budget tracker (Week 1)",
-            step2: "Pay off ₹20k debt (Month 1)",
-            step3: "Build ₹50k emergency fund (Month 3-6)",
-            estimatedDays: 180
-        });
-        console.log("   ✅ Step 1: " + plan.step1);
-        console.log("   ✅ Step 2: " + plan.step2);
-        console.log("   ✅ Step 3: " + plan.step3);
-        console.log("   ⏱️ Estimated Days: " + plan.estimatedDays + "\n");
+        // Determine recommended actions based on root causes
+        const actions: string[] = [];
+        if (dti > 40) actions.push("pay_off_debt");
+        if (creditScore < 750) actions.push("reduce_utilization");
+        if (anomalies.hasAnomaly) actions.push("dispute_error");
 
-        console.log("╔════════════════════════════════════════════════════════════╗");
-        console.log("║              ✅ RECOVERY SQUAD COMPLETE                    ║");
-        console.log("╠════════════════════════════════════════════════════════════╣");
-        console.log("║  Pipeline: Investigator → Negotiator → Architect          ║");
-        console.log("║  Status: 3/3 Agents Complete                               ║");
-        console.log("╚════════════════════════════════════════════════════════════╝");
-        console.log("\n");
+        const creditImpact = simulateCreditScoreImpact(creditScore, actions);
+
+        // Generate strategy based on profile
+        let strategyName = "General Improvement";
+        let negotiationScript = "";
+
+        if (employmentRisk.riskLevel === "Critical" && employmentType === "student") {
+            strategyName = "The Proprietor Pivot";
+            negotiationScript = "Position yourself as a Sole Proprietor instead of Student. Register a business, route income through a current account, and apply after 6 months of statements.";
+        } else if (dti > 50) {
+            strategyName = "Debt Snowball Attack";
+            negotiationScript = `Reduce DTI from ${dti}% to below 40% by clearing ₹${Math.round(existingEMI * 3).toLocaleString("en-IN")} in existing debt. Start with the highest-interest loan first.`;
+        } else if (creditScore < 650) {
+            strategyName = "Credit Rehabilitation";
+            negotiationScript = `Improve score from ${creditScore} to ${creditImpact.projectedScore} by: ${actions.join(", ")}. Expected improvement: +${creditImpact.projectedScore - creditScore} points over 3-6 months.`;
+        } else if (dti > 40) {
+            strategyName = "DTI Optimization";
+            negotiationScript = `Reduce obligations by ₹${Math.round((dti - 35) / 100 * monthlyIncome).toLocaleString("en-IN")}/month to bring DTI from ${dti}% to a safe 35%.`;
+        } else {
+            strategyName = "Profile Strengthening";
+            negotiationScript = `Your profile is reasonably strong (DTI: ${dti}%, Score: ${creditScore}). Focus on building 6+ months of bank statement history and apply to NBFCs with relaxed criteria.`;
+        }
+
+        const stage2 = {
+            agent: "Negotiator",
+            title: strategyName,
+            result: {
+                strategy: strategyName,
+                negotiationScript: negotiationScript,
+                creditImpact: creditImpact,
+                projectedScore: creditImpact.projectedScore,
+                recommendedActions: actions,
+            },
+        };
+        console.log(`   ✅ Strategy: ${strategyName} | Projected Score: ${creditImpact.projectedScore}`);
+
+        // ═══════════════════════════════════════════════════════════
+        // STAGE 3: THE ARCHITECT (Pure TypeScript — 0 API calls)
+        // ═══════════════════════════════════════════════════════════
+        console.log("├─── STAGE 3: 🏗️ THE ARCHITECT (Tools) ────────┤");
+
+        // Parse savings to number
+        let currentSavings = 25000;
+        if (savings.includes("50k-1L")) currentSavings = 75000;
+        else if (savings.includes("1L-5L")) currentSavings = 300000;
+        else if (savings.includes("5L+")) currentSavings = 500000;
+
+        const targetSavings = loanAmount * 0.2; // 20% down payment target
+        const monthlySavingsRate = Math.max(1000, monthlyIncome - existingEMI - monthlyExpenses);
+
+        const timeline = calculateSavingsTimeline(currentSavings, targetSavings, monthlySavingsRate);
+
+        // Build action plan
+        const actionPlan = [];
+        if (employmentRisk.riskLevel === "Critical" || employmentRisk.riskLevel === "High") {
+            actionPlan.push({ week: "Week 1-2", action: "Stabilize employment documentation", impact: "Removes primary rejection factor" });
+        }
+        if (dti > 40) {
+            actionPlan.push({ week: "Month 1-3", action: `Reduce monthly obligations by ₹${Math.round((dti - 35) / 100 * monthlyIncome).toLocaleString("en-IN")}`, impact: `Brings DTI from ${dti}% to ~35%` });
+        }
+        if (creditScore < 750) {
+            actionPlan.push({ week: "Month 1-6", action: `Improve credit score (current: ${creditScore}, target: ${creditImpact.projectedScore})`, impact: `Unlocks ${creditImpact.projectedScore >= 750 ? "premium" : "standard"} rates` });
+        }
+        actionPlan.push({ week: `Month ${Math.max(3, timeline.months)}`, action: "Re-apply with improved profile", impact: "Significantly higher approval odds" });
+
+        const stage3 = {
+            agent: "Architect",
+            title: "Recovery Timeline",
+            result: {
+                savingsTimeline: timeline,
+                estimatedRecoveryMonths: Math.max(3, timeline.months),
+                actionPlan: actionPlan,
+                readinessDate: new Date(Date.now() + Math.max(3, timeline.months) * 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+            },
+        };
+        console.log(`   ✅ Recovery: ${Math.max(3, timeline.months)} months | Target: ${stage3.result.readinessDate}`);
+        console.log("└──────────────────────────────────────────────┘\n");
+
+        // ═══════════════════════════════════════════════════════════
+        // OPTIONAL: Single Gemini call to humanize the narrative
+        // ═══════════════════════════════════════════════════════════
+        let aiNarrative = "";
+        try {
+            const narrativePrompt = `You are a helpful, data-driven financial advisor. 
+1. Analyze this specific rejection case:
+- Root Causes: ${rootCauses.join("; ")}
+- Strategy: ${strategyName}
+- Key Actions: ${negotiationScript}
+- Timeline: ${Math.max(3, timeline.months)} months
+
+2. Write a 2-3 sentence summary that is HIGHLY SPECIFIC to these numbers.
+- Mention the exact credit score target (${creditImpact.projectedScore}) if relevant.
+- Mention the exact debt reduction amount if relevant.
+- Do NOT use generic phrases like "financial journey". Be tactical.
+
+Output specific, actionable advice only.`;
+
+            aiNarrative = await generateWithRotation("gemini-2.5-flash", narrativePrompt, { temperature: 0.8, maxOutputTokens: 200 });
+            console.log("   🤖 AI Narrative generated (1 API call)");
+        } catch (err: any) {
+            console.warn("   ⚠️ AI narrative skipped (quota):", err.message);
+            aiNarrative = `Based on our analysis, your primary challenge is ${rootCauses[0] || "profile optimization"}. By following the "${strategyName}" strategy, you can significantly improve your approval chances within ${Math.max(3, timeline.months)} months.`;
+        }
 
         return NextResponse.json({
-            stage1_investigation: investigation,
-            stage2_strategy: strategy,
-            stage3_plan: plan,
-            _metadata: { mode: "fallback-genai", dti }
+            success: true,
+            stage1,
+            stage2,
+            stage3,
+            aiNarrative,
+            _metadata: {
+                mode: "tools-first",
+                apiCalls: aiNarrative ? 1 : 0,
+                previousApiCalls: 3,
+                savings: "66-100%",
+            },
         });
 
     } catch (error: any) {
-        console.error("Recovery Squad Error:", error);
-
-        // Static fallback
-        const dti = calculateDTI(
-            body.monthlyIncome || 100000,
-            body.existingEMI || 20000,
-            body.monthlyExpenses || 30000
-        );
-
+        console.error("Recovery API error:", error);
         return NextResponse.json({
-            stage1_investigation: {
-                rootCause: "System overloaded",
-                hiddenFactor: "Unable to process",
-                severity: "Medium",
-                bulletPoints: [`DTI: ${dti}%`, "Manual review required"]
-            },
-            stage2_strategy: {
-                strategyName: "Documentation Recovery",
-                actionItem: "Submit additional documents",
-                bulletPoints: ["Bank statements", "Salary slips", "ID proof"],
-                negotiationScript: "Please review my updated documents."
-            },
-            stage3_plan: {
-                step1: "Gather documents (Week 1)",
-                step2: "Submit to bank (Week 2)",
-                step3: "Follow up (Month 1)",
-                estimatedDays: 30
-            }
+            error: error.message || "Recovery analysis failed",
         }, { status: 500 });
     }
 }

@@ -7,7 +7,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { LanguageProvider } from "@/lib/language-context"
 import { VoiceAssistantProvider } from "@/lib/voice-assistant-context"
 import VoiceAssistantButton from "@/components/voice-assistant-button"
+
 import GlobalChatbot from "@/components/global-chatbot"
+
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })

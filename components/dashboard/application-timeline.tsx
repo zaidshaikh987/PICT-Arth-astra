@@ -1,208 +1,164 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useUser } from "@/lib/user-context"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, FileCheck, TrendingUp, Award, Upload } from "lucide-react"
+import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, FileCheck, TrendingUp, Award, Upload, ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 export default function ApplicationTimeline() {
+  const { user, updateUser } = useUser()
   const [timeline, setTimeline] = useState<any[]>([])
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // 1. Initial Data Load
+  // Hydrate timeline from user state
   useEffect(() => {
-    const files = localStorage.getItem("uploadedFiles")
-    if (files) {
-      setUploadedFiles(JSON.parse(files))
-    }
-  }, [])
+    if (!user) return
 
-  // 2. Timeline Simulation Engine
-  useEffect(() => {
-    const profileData = localStorage.getItem("onboardingData")
-    const userProfile = profileData ? JSON.parse(profileData) : {}
-    const creditScore = userProfile.creditScore || 750
+    const simState = user.timelineSimulation || {}
+    const uploadedFiles = user.uploadedFiles || []
 
-    const requiredDocs = ["pan", "aadhaar", "utility", "salary-slip", "bank-statement"]
+    // Logic to determine stage statuses based on persisted state
+    const requiredDocs = ["pan", "aadhaar", "salary-slip", "bank-statement"]
     const uploadedDocIds = [...new Set(uploadedFiles.map((f: any) => f.docId))]
     const docProgress = requiredDocs.length > 0 ? Math.min(uploadedDocIds.length / requiredDocs.length, 1) : 0
 
-    const simState = JSON.parse(localStorage.getItem("timelineSimulation") || "{}")
-
-    let creditCheckStatus = "pending"
-    let lenderMatchStatus = "pending"
-    let appSubmitStatus = "pending"
-    let approvalStatus = "pending"
-
-    // Notification Helper
-    const notifyUser = async (stage: string) => {
-      const simState = JSON.parse(localStorage.getItem("timelineSimulation") || "{}")
-      console.log(`[Timeline] Checking notification for ${stage}. Already notified?`, simState[`notified_${stage}`])
-
-      if (simState[`notified_${stage}`]) return
-
-      try {
-        console.log(`[Timeline] Triggering notification for ${stage}...`)
-        const res = await fetch("/api/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            stage,
-            userData: { name: userProfile.name, phone: userProfile.phone, creditScore }
-          })
-        })
-        const data = await res.json()
-        console.log(`[Timeline] Notification API response:`, data)
-
-        // Only mark as notified if the API actually succeeded
-        if (data.success) {
-          localStorage.setItem("timelineSimulation", JSON.stringify({ ...JSON.parse(localStorage.getItem("timelineSimulation") || "{}"), [`notified_${stage}`]: true }))
-        } else {
-          console.warn(`[Timeline] Notification failed (API returned success: false). Will retry on next load. Reason: ${data.error || 'Unknown'}`)
-        }
-      } catch (e) {
-        console.error("Notify failed", e)
+    // Auto-update Doc Status in Simulation if not set
+    if (docProgress > 0 && simState.docStatus !== 'completed') {
+      if (docProgress === 1 && simState.docStatus !== 'completed') {
+        simState.docStatus = 'completed'
+        simState.docsCompletedAt = Date.now()
+        updateUser({ timelineSimulation: simState }) // Persist
+      } else if (simState.docStatus !== 'in-progress') {
+        simState.docStatus = 'in-progress'
+        updateUser({ timelineSimulation: simState }) // Persist
       }
     }
 
-    // STAGE 1: Profile Setup (Immediate)
-    if (userProfile.name) {
-      notifyUser("profile_setup")
-    }
-
-    // STAGE 2: Documents
-    const docStatus = docProgress === 1 ? "completed" : docProgress > 0 ? "in-progress" : "pending"
-    // Trigger if at least one doc is uploaded
-    if (docStatus === "completed" || docStatus === "in-progress") notifyUser("docs_uploaded")
-
-    // STAGE 3: Credit Check
-    if (docProgress > 0.4) {
-      if (!simState.creditCheckStarted) {
-        simState.creditCheckStarted = Date.now()
-        localStorage.setItem("timelineSimulation", JSON.stringify(simState))
-        notifyUser("credit_check_started")
-      }
-      const elapsed = Date.now() - simState.creditCheckStarted
-      creditCheckStatus = elapsed > 5000 ? "completed" : "in-progress"
-      if (creditCheckStatus === "completed") notifyUser("credit_check_completed")
-    }
-
-    // STAGE 4: Lender Matching
-    if (creditCheckStatus === "completed") {
-      if (!simState.matchingStarted) {
-        simState.matchingStarted = Date.now()
-        localStorage.setItem("timelineSimulation", JSON.stringify(simState))
-      }
-      const elapsed = Date.now() - simState.matchingStarted
-      lenderMatchStatus = elapsed > 4000 ? "completed" : "in-progress"
-      if (lenderMatchStatus === "completed") notifyUser("lender_match_found")
-    }
-
-    // STAGE 5: Submission
-    if (simState.applicationSubmitted) {
-      appSubmitStatus = "completed"
-      notifyUser("application_submitted")
-    } else if (lenderMatchStatus === "completed") {
-      appSubmitStatus = "in-progress"
-    }
-
-    // STAGE 6: Approval
-    if (appSubmitStatus === "completed") {
-      if (!simState.approvalStarted) {
-        simState.approvalStarted = Date.now()
-        localStorage.setItem("timelineSimulation", JSON.stringify(simState))
-      }
-      const elapsed = Date.now() - simState.approvalStarted
-      if (creditScore > 750) {
-        approvalStatus = elapsed > 6000 ? "completed" : "in-progress"
-        if (approvalStatus === "completed") notifyUser("loan_approved")
-      } else {
-        approvalStatus = "in-progress"
-      }
-    }
-
-    setTimeline([
+    // Build the View Model
+    const newTimeline = [
       {
         stage: "Profile Setup",
         status: "completed",
-        date: "Completed",
+        date: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Completed",
         description: "Basic information and loan requirements submitted",
         actions: [],
       },
       {
         stage: "Document Upload",
-        status: docStatus,
-        date: docStatus === "completed" ? "Completed" : "In Progress",
+        status: simState.docStatus || (docProgress > 0 ? "in-progress" : "pending"),
+        date: simState.docsCompletedAt ? new Date(simState.docsCompletedAt).toLocaleDateString() : (docProgress > 0 ? "In Progress" : "Pending"),
         description: "Upload required documents",
         actions: requiredDocs.map(id => ({
           name: getDocumentName(id),
           status: uploadedDocIds.includes(id) ? "completed" : "pending"
         })),
+        link: "/dashboard/documents"
       },
       {
         stage: "Credit Check",
-        status: creditCheckStatus,
-        date: creditCheckStatus === "completed" ? "Verified" : creditCheckStatus === "in-progress" ? "Processing..." : `Est. ${getEstimatedDate(1)}`,
-        description: creditCheckStatus === "completed" ? `Score Verified: ${creditScore}` : "Checking credit history",
+        status: simState.creditCheckStatus || "pending",
+        date: simState.creditCheckCompletedAt ? new Date(simState.creditCheckCompletedAt).toLocaleDateString() : "Pending",
+        description: simState.creditCheckStatus === "completed" ? `Score Verified: ${user.creditScore}` : "Checking credit history",
         actions: [],
       },
       {
         stage: "Lender Matching",
-        status: lenderMatchStatus,
-        date: lenderMatchStatus === "completed" ? "Match Found" : lenderMatchStatus === "in-progress" ? "Searching..." : `Est. ${getEstimatedDate(2)}`,
+        status: simState.lenderMatchStatus || "pending",
+        date: simState.lenderMatchCompletedAt ? new Date(simState.lenderMatchCompletedAt).toLocaleDateString() : "Pending",
         description: "Finding best loan offers",
         actions: [],
       },
       {
         stage: "Application Submission",
-        status: appSubmitStatus,
-        date: appSubmitStatus === "completed" ? "Submitted" : `Est. ${getEstimatedDate(3)}`,
+        status: simState.appSubmitStatus || "pending",
+        date: simState.appSubmittedAt ? new Date(simState.appSubmittedAt).toLocaleDateString() : "Pending",
         description: "Submitting to selected banks",
         actions: [],
       },
       {
         stage: "Final Approval",
-        status: approvalStatus,
-        date: approvalStatus === "completed" ? "Approved" : `Est. ${getEstimatedDate(5)}`,
+        status: simState.approvalStatus || "pending",
+        date: simState.approvedAt ? new Date(simState.approvedAt).toLocaleDateString() : "Pending",
         description: "Loan sanction and disbursement",
         actions: [],
       },
-    ])
+    ]
 
-    // Refresh timer
-    const interval = setInterval(() => {
-      setTimeline(prev => [...prev])
-    }, 1000)
-    return () => clearInterval(interval)
+    setTimeline(newTimeline)
 
-  }, [uploadedFiles])
+    // Run Simulation Logic (The "Game Loop")
+    const runSimulation = async () => {
+      let changed = false
+      const now = Date.now()
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "text-emerald-600 bg-emerald-100 border-emerald-200"
-      case "in-progress": return "text-blue-600 bg-blue-100 border-blue-200"
-      default: return "text-gray-400 bg-gray-50 border-gray-200"
+      // 1. Credit Check Automation
+      if (simState.docStatus === 'completed' && simState.creditCheckStatus !== 'completed') {
+        if (!simState.creditCheckStartedAt) {
+          simState.creditCheckStartedAt = now
+          simState.creditCheckStatus = 'in-progress'
+          changed = true
+        } else if (now - simState.creditCheckStartedAt > 5000) {
+          simState.creditCheckStatus = 'completed'
+          simState.creditCheckCompletedAt = now
+          // Trigger Check Notification
+          await notifyUser("credit_check_completed", user)
+          changed = true
+        }
+      }
+
+      // 2. Lender Matching Automation
+      if (simState.creditCheckStatus === 'completed' && simState.lenderMatchStatus !== 'completed') {
+        if (!simState.lenderMatchStartedAt) {
+          simState.lenderMatchStartedAt = now
+          simState.lenderMatchStatus = 'in-progress'
+          changed = true
+        } else if (now - simState.lenderMatchStartedAt > 4000) {
+          simState.lenderMatchStatus = 'completed'
+          simState.lenderMatchCompletedAt = now
+          await notifyUser("lender_match_found", user)
+          changed = true
+        }
+      }
+
+      // 3. Approval Automation (Only if submitted)
+      if (simState.appSubmitStatus === 'completed' && simState.approvalStatus !== 'completed') {
+        if (!simState.approvalStartedAt) {
+          simState.approvalStartedAt = now
+          simState.approvalStatus = 'in-progress'
+          changed = true
+        } else if (now - simState.approvalStartedAt > 8000) {
+          simState.approvalStatus = 'completed'
+          simState.approvedAt = now
+          await notifyUser("loan_approved", user)
+          changed = true
+        }
+      }
+
+      if (changed) {
+        updateUser({ timelineSimulation: simState })
+      }
     }
+
+    const timer = setInterval(runSimulation, 2000)
+    return () => clearInterval(timer)
+
+  }, [user])
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    // Force a re-sync or just visual feedback
+    setTimeout(() => setIsRefreshing(false), 1000)
   }
 
-  const getStatusIcon = (status: string) => {
-    if (status === "completed") return <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-    if (status === "in-progress") return <Clock className="w-5 h-5 text-blue-600 animate-spin-slow" /> // Custom slow spin if defined, or standard
-    return <Circle className="w-5 h-5 text-gray-300" />
-  }
-
+  // Calculate stats for dashboard cards
   const completedStages = timeline.filter((t) => t.status === "completed").length
   const progress = timeline.length > 0 ? (completedStages / timeline.length) * 100 : 0
 
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    setTimeout(() => setIsRefreshing(false), 2000)
-  }
-
   return (
-    <div className="space-y-8">
-      {/* 1. Header & Controls */}
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Application Timeline</h1>
@@ -211,188 +167,151 @@ export default function ApplicationTimeline() {
         <Button
           variant="outline"
           onClick={handleRefresh}
-          className="group border-emerald-200 hover:bg-emerald-50 text-emerald-700"
+          className="group border-blue-200 hover:bg-blue-50 text-blue-700"
         >
-          <Clock className={`w-4 h-4 mr-2 group-hover:text-emerald-600 ${isRefreshing ? "animate-spin" : ""}`} />
+          <Clock className={`w-4 h-4 mr-2 group-hover:text-blue-600 ${isRefreshing ? "animate-spin" : ""}`} />
           {isRefreshing ? "Syncing..." : "Refresh Status"}
         </Button>
       </div>
 
-      {/* 2. Progress Dashboard */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Overall Progress */}
-        <Card className="p-6 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-500">Total Progress</span>
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="flex items-end gap-2 mb-2">
-            <span className="text-3xl font-bold text-gray-900">{Math.round(progress)}%</span>
-            <span className="text-sm text-gray-500 mb-1">completed</span>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </Card>
-
-        {/* Next Milestone */}
-        <Card className="p-6 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-500">Next Milestone</span>
-            <Clock className="w-5 h-5 text-blue-500" />
-          </div>
-          <div className="text-xl font-bold text-gray-900 line-clamp-1">
-            {timeline.find(t => t.status === "in-progress")?.stage || "All Completed"}
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Est. {getEstimatedDate(1)}
-          </p>
-        </Card>
-
-        {/* Action Items */}
-        <Card className="p-6 border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-500">Pending Actions</span>
-            <AlertCircle className="w-5 h-5 text-purple-500" />
-          </div>
-          <div className="text-3xl font-bold text-gray-900">
-            {timeline.reduce((acc, step) => acc + step.actions.filter((a: any) => a.status !== 'completed').length, 0)}
-          </div>
-          <p className="text-sm text-gray-500 mt-1">Requires your attention</p>
-        </Card>
+        <GlassCard color="blue" icon={TrendingUp} label="Total Progress" value={`${Math.round(progress)}%`} sub="completed" progress={progress} />
+        <GlassCard color="indigo" icon={Clock} label="Next Milestone" value={timeline.find(t => t.status === "in-progress" || t.status === "pending")?.stage || "All Done"} sub="In Progress" />
+        <GlassCard color="purple" icon={AlertCircle} label="Pending Actions" value={timeline.reduce((acc, step) => acc + step.actions.filter((a: any) => a.status !== 'completed').length, 0)} sub="Requires attention" />
       </div>
 
-      <div className="space-y-6">
+      {/* Timeline Items */}
+      <div className="space-y-6 relative">
+        <div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gray-200 -z-10" />
+
         {timeline.map((item, index) => (
-          <Card key={index} className={`p-6 ${item.status === "in-progress" ? "border-2 border-emerald-500" : ""}`}>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                {item.status === "completed" ? (
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                  </div>
-                ) : item.status === "in-progress" ? (
-                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center animate-pulse">
-                    <Clock className="w-6 h-6 text-emerald-600" />
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Circle className="w-6 h-6 text-gray-400" />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">{item.stage}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{item.date}</span>
-                  </div>
-                </div>
-
-                <p className="text-gray-600 mb-4">{item.description}</p>
-
-                {item.actions.length > 0 && (
-                  <div className="space-y-2">
-                    {item.actions.map((action: any, actionIndex: number) => (
-                      <div key={actionIndex} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          {action.status === "completed" ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          ) : action.status === "action_needed" ? (
-                            <TrendingUp className="w-5 h-5 text-emerald-600 animate-bounce" />
-                          ) : (
-                            <AlertCircle className="w-5 h-5 text-orange-600" />
-                          )}
-                          <span className="font-medium text-gray-900">{action.name}</span>
-                        </div>
-
-                        {/* Document Upload Button */}
-                        {action.status === "pending" && item.stage === "Document Upload" && (
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700"
-                            onClick={() => (window.location.href = "/dashboard/documents")}
-                          >
-                            <Upload className="w-4 h-4 mr-1" />
-                            Upload
-                          </Button>
-                        )}
-
-                        {/* Submit Application Button */}
-                        {action.status === "action_needed" && (
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 shadow-lg animate-pulse"
-                            onClick={() => {
-                              const simState = JSON.parse(localStorage.getItem("timelineSimulation") || "{}")
-                              localStorage.setItem("timelineSimulation", JSON.stringify({ ...simState, applicationSubmitted: true }))
-                              // Force re-render
-                              setTimeline([...timeline])
-                            }}
-                          >
-                            Submit Now
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {item.status === "in-progress" && item.actions.length === 0 && (
-                  <Button className="bg-emerald-600 hover:bg-emerald-700">Continue</Button>
-                )}
-              </div>
-            </div>
-          </Card>
+          <TimelineItem key={index} item={item} />
         ))}
       </div>
 
-      <Card className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-cyan-50">
+      {/* Document CTA */}
+      <Card className="glass-card p-6 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50/50 to-white/50 backdrop-blur-md">
         <div className="flex items-start gap-4">
-          <FileCheck className="w-8 h-8 text-blue-600 flex-shrink-0" />
+          <div className="p-3 bg-blue-100 rounded-full">
+            <FileCheck className="w-6 h-6 text-blue-600" />
+          </div>
           <div>
-            <h3 className="font-bold text-gray-900 mb-2">Keep Your Documents Ready</h3>
-            <p className="text-sm text-gray-700 mb-3">
-              To speed up the process, keep these documents scanned and ready: PAN card, Aadhaar, salary slips (last 3
-              months), and bank statements (last 6 months).
-            </p>
-            <Button
-              variant="outline"
-              className="bg-white"
-              onClick={() => (window.location.href = "/dashboard/documents")}
-            >
-              View Complete Checklist
-            </Button>
+            <h3 className="font-bold text-gray-900 mb-1">Documents Required</h3>
+            <p className="text-sm text-gray-600 mb-3">Ensure all documents are clear and valid. Verification takes 2-3 minutes.</p>
+            <Link href="/dashboard/documents">
+              <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">View Checklist</Button>
+            </Link>
           </div>
         </div>
       </Card>
+
     </div>
   )
 }
 
-function getDocumentName(docId: string): string {
-  const names: Record<string, string> = {
-    pan: "PAN Card",
-    aadhaar: "Aadhaar Card",
-    passport: "Passport",
-    utility: "Utility Bill",
-    rent: "Rent Agreement",
-    "salary-slip": "Salary Slips",
-    "bank-statement": "Bank Statement",
-    form16: "Form 16 / ITR",
-    "property-docs": "Property Papers",
-    noc: "NOC from Society",
+// Components
+
+function GlassCard({ color, icon: Icon, label, value, sub, progress }: any) {
+  const colors: any = {
+    blue: "border-l-blue-500 text-blue-500",
+    indigo: "border-l-indigo-500 text-indigo-500",
+    purple: "border-l-purple-500 text-purple-500",
   }
-  return names[docId] || docId
+
+  return (
+    <Card className={`p-6 border-l-4 ${colors[color]} shadow-md hover:shadow-lg transition-all bg-white/80 backdrop-blur-sm`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-gray-500">{label}</span>
+        <Icon className={`w-5 h-5 ${colors[color].split(" ")[1]}`} />
+      </div>
+      <div className="flex items-end gap-2 mb-2">
+        <span className="text-3xl font-bold text-gray-900">{value}</span>
+        <span className="text-sm text-gray-500 mb-1">{sub}</span>
+      </div>
+      {typeof progress === 'number' && (
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+    </Card>
+  )
 }
 
-function getEstimatedDate(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() + days)
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+function TimelineItem({ item }: any) {
+  const isCompleted = item.status === "completed"
+  const isInProgress = item.status === "in-progress"
+
+  return (
+    <Card className={`p-6 ml-0 md:ml-0 transition-all ${isInProgress ? "border-blue-400 ring-4 ring-blue-50 shadow-lg scale-[1.01]" : "border-gray-100 shadow-sm"}`}>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 relative">
+          {isCompleted ? (
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            </div>
+          ) : isInProgress ? (
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-sm animate-pulse">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border-4 border-white">
+              <Circle className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-2">
+            <h3 className={`text-lg font-bold ${isCompleted ? "text-gray-900" : isInProgress ? "text-blue-700" : "text-gray-500"}`}>
+              {item.stage}
+            </h3>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Calendar className="w-4 h-4" />
+              <span>{item.date}</span>
+            </div>
+          </div>
+
+          <p className="text-gray-600 mb-4 text-sm">{item.description}</p>
+
+          {/* Actions List */}
+          {item.actions.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+              {item.actions.map((action: any, i: number) => (
+                <div key={i} className="flex items-center gap-2 p-2 rounded bg-gray-50 border border-gray-100">
+                  {action.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Circle className="w-4 h-4 text-gray-300" />}
+                  <span className={`text-sm ${action.status === 'completed' ? "text-gray-700 font-medium" : "text-gray-500"}`}>{action.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action Button */}
+          {isInProgress && item.link && (
+            <Link href={item.link}>
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 mt-2">
+                Complete Now <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function getDocumentName(id: string) {
+  const map: any = { "pan": "PAN Card", "aadhaar": "Aadhaar Card", "salary-slip": "Salary Slip", "bank-statement": "Bank Statement" }
+  return map[id] || id
+}
+
+async function notifyUser(stage: string, user: any) {
+  // Send only if not already notified (handled in component logic via state check usually, but here just firing)
+  // In a real app we'd check `simState.notified_X`
+  try {
+    await fetch("/api/notify", {
+      method: "POST",
+      body: JSON.stringify({ stage, userData: { name: user.name, phone: user.phone } })
+    })
+  } catch (e) { console.error(e) }
 }

@@ -11,7 +11,7 @@ export default function CallToAction() {
   const [email, setEmail] = useState("")
 
   return (
-    <section className="py-20 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 relative overflow-hidden">
+    <section className="py-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-600 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div

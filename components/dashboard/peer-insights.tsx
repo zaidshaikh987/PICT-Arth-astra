@@ -1,27 +1,26 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useUser } from "@/lib/user-context"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Users, TrendingUp, TrendingDown, Target, Award, Percent } from "lucide-react"
 
 export default function PeerInsights() {
-  const [userData, setUserData] = useState<any>(null)
   const [peerData, setPeerData] = useState<any>(null)
+  const { user } = useUser()
 
   useEffect(() => {
-    const data = localStorage.getItem("onboardingData")
-    if (data) {
-      const parsed = JSON.parse(data)
-      setUserData(parsed)
-      setPeerData(generatePeerComparison(parsed))
+    if (user) {
+      const comparison = generatePeerComparison(user)
+      setPeerData(comparison)
     }
-  }, [])
+  }, [user])
 
-  if (!userData || !peerData) {
+  if (!user || !peerData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     )
   }
@@ -34,21 +33,37 @@ export default function PeerInsights() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6 border-2 border-emerald-100">
+        <Card className="p-6 border-2 border-blue-100">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-gray-600">Your Percentile</span>
-            <Award className="w-6 h-6 text-emerald-600" />
+            <Award className="w-6 h-6 text-blue-600" />
           </div>
-          <div className="text-4xl font-bold text-emerald-600 mb-2">{peerData.percentile}th</div>
-          <p className="text-sm text-gray-600">Better than {peerData.percentile}% of applicants</p>
+          <div className="text-4xl font-bold text-blue-600 mb-2">{peerData.percentile}th</div>
+          <p className="text-sm text-gray-600 mb-4">Better than {peerData.percentile}% of applicants</p>
+
+          {/* Bell Curve Visual */}
+          <div className="relative h-24 mt-2 flex items-end justify-center">
+            {/* Simple CSS-based Bell Curve shape */}
+            <div className="w-full h-full bg-gradient-to-t from-blue-100 to-transparent rounded-t-full opacity-50 absolute bottom-0" style={{ clipPath: "polygon(0% 100%, 10% 80%, 30% 30%, 50% 10%, 70% 30%, 90% 80%, 100% 100%)" }}></div>
+            <div className="w-full h-full border-t-2 border-dashed border-blue-200 absolute bottom-0" style={{ clipPath: "polygon(0% 100%, 10% 80%, 30% 30%, 50% 10%, 70% 30%, 90% 80%, 100% 100%)" }}></div>
+
+            {/* User Indicator */}
+            <div className="absolute bottom-0 w-1 h-full flex flex-col items-center justify-end" style={{ left: `${peerData.percentile}%` }}>
+              <div className="mb-1 px-1.5 py-0.5 bg-blue-600 text-white text-[10px] rounded font-bold shadow-sm whitespace-nowrap -translate-x-1/2">
+                You
+              </div>
+              <div className="w-0.5 h-12 bg-blue-600"></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full -mb-1.5"></div>
+            </div>
+          </div>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-gray-600">Avg Approval Rate</span>
-            <Percent className="w-6 h-6 text-teal-600" />
+            <Percent className="w-6 h-6 text-indigo-600" />
           </div>
-          <div className="text-4xl font-bold text-teal-600 mb-2">{peerData.avgApprovalRate}%</div>
+          <div className="text-4xl font-bold text-indigo-600 mb-2">{peerData.avgApprovalRate}%</div>
           <p className="text-sm text-gray-600">For your income bracket</p>
         </Card>
 
@@ -100,9 +115,9 @@ export default function PeerInsights() {
           <h3 className="text-xl font-bold text-gray-900 mb-6">Success Stories</h3>
           <div className="space-y-4">
             {peerData.successStories.map((story: any, index: number) => (
-              <div key={index} className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg">
+              <div key={index} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                     {story.initial}
                   </div>
                   <div className="flex-1">
@@ -114,7 +129,7 @@ export default function PeerInsights() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-emerald-700 font-medium">Loan: ₹{story.amount.toLocaleString("en-IN")}</span>
+                  <span className="text-blue-700 font-medium">Loan: ₹{story.amount.toLocaleString("en-IN")}</span>
                   <span className="text-gray-600">Rate: {story.rate}%</span>
                 </div>
               </div>
@@ -129,11 +144,11 @@ export default function PeerInsights() {
           {peerData.popularActions.map((action: any, index: number) => (
             <div
               key={index}
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 transition-colors"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors"
             >
               <div className="flex items-center justify-between mb-3">
-                <Target className="w-6 h-6 text-emerald-600" />
-                <span className="text-sm font-bold text-emerald-600">{action.percentage}%</span>
+                <Target className="w-6 h-6 text-blue-600" />
+                <span className="text-sm font-bold text-blue-600">{action.percentage}%</span>
               </div>
               <h4 className="font-semibold text-gray-900 mb-1">{action.action}</h4>
               <p className="text-sm text-gray-600">{action.description}</p>

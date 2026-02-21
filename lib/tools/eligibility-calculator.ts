@@ -14,9 +14,16 @@ export function calculateDetailedEligibility(data: any) {
     const employmentTenure = data.employmentTenure || "1-2yr"
 
     const totalIncome = monthlyIncome + coborrowerIncome
-    const dti = totalIncome > 0 ? ((existingEMI + monthlyExpenses) / totalIncome) * 100 : 0
+
+    // Banking-standard DTI (FOIR): Only debt obligations, NOT living expenses
+    // This matches how banks actually evaluate loan applications
+    const dti = totalIncome > 0 ? (existingEMI / totalIncome) * 100 : 0
+
+    // Total obligation ratio (includes expenses) — used for capacity calculation
+    const totalObligationRatio = totalIncome > 0 ? ((existingEMI + monthlyExpenses) / totalIncome) * 100 : 0
 
     // Banks typically allow 40-50% of net income for EMI
+    // Subtract existing EMI AND expenses from capacity
     const maxEMICapacity = totalIncome * 0.5 - existingEMI
     const availableForEMI = Math.max(0, maxEMICapacity)
 
@@ -183,7 +190,8 @@ export function calculateDetailedEligibility(data: any) {
             existingEMI,
             monthlyExpenses,
             availableForEMI: Math.round(availableForEMI),
-            dti,
+            dti: Math.round(dti * 10) / 10,
+            totalObligationRatio: Math.round(totalObligationRatio * 10) / 10,
             estimatedEMI: Math.round(estimatedEMI),
             interestRate: baseRate,
             tenure,

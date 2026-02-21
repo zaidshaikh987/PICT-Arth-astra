@@ -1,12 +1,26 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, TrendingUp, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { policyData } from "@/lib/policy-data"
 
 export function DashboardHero({ userData }: { userData: any }) {
     const score = userData.creditReadinessScore || 0
+    const [index, setIndex] = useState(0)
+    const [lang, setLang] = useState<"en" | "hi" | "mr">("en")
+
+    useEffect(() => {
+        const savedLang = (localStorage.getItem("language") as "en" | "hi" | "mr") || "en"
+        setLang(savedLang)
+
+        const interval = setInterval(() => {
+            setIndex((prev) => (prev + 1) % policyData.length)
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [])
 
     // Calculate stroke dash for circular progress
     const radius = 40
@@ -26,10 +40,11 @@ export function DashboardHero({ userData }: { userData: any }) {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-medium backdrop-blur-sm"
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-medium backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
+                        onClick={() => setIndex((prev) => (prev + 1) % policyData.length)}
                     >
                         <Sparkles className="w-3 h-3 text-yellow-300" />
-                        <span>AI Powered Insight</span>
+                        <span>{policyData[index]?.text[lang] || "AI Powered Insight"}</span>
                     </motion.div>
 
                     <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
@@ -87,7 +102,7 @@ export function DashboardHero({ userData }: { userData: any }) {
                                 cx="50%"
                                 cy="50%"
                                 r={radius + "%"}
-                                className="stroke-emerald-400 fill-none"
+                                className="stroke-blue-400 fill-none"
                                 strokeWidth="12"
                                 strokeLinecap="round"
                                 strokeDasharray={circumference}
@@ -97,7 +112,7 @@ export function DashboardHero({ userData }: { userData: any }) {
                         {/* Inner Text */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                             <span className="text-5xl font-bold text-white">{score}</span>
-                            <span className="text-xs text-uppercase tracking-wider text-emerald-300 font-medium">Out of 100</span>
+                            <span className="text-xs text-uppercase tracking-wider text-blue-300 font-medium">Out of 100</span>
                         </div>
                     </div>
                 </motion.div>

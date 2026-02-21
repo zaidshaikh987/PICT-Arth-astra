@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useUser } from "@/lib/user-context"
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -157,13 +158,13 @@ export default function DocumentChecklist() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [viewingFile, setViewingFile] = useState<UploadedFile | null>(null)
   const { language } = useLanguage()
+  const { user, updateUser } = useUser()
 
   useEffect(() => {
-    const saved = localStorage.getItem("uploadedFiles")
-    if (saved) {
-      setUploadedFiles(JSON.parse(saved))
+    if (user?.uploadedFiles) {
+      setUploadedFiles(user.uploadedFiles)
     }
-  }, [])
+  }, [user])
 
   const handleFileUpload = async (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -227,12 +228,11 @@ export default function DocumentChecklist() {
           extractedData: result.verification?.extractedData
         }
 
-        setUploadedFiles(prev => prev.map(f => f.id === newFile.id ? verifiedFile : f))
-
-        // Store in local storage
-        const currentFiles = JSON.parse(localStorage.getItem("uploadedFiles") || "[]")
-        const newStoredFiles = [...currentFiles.filter((f: any) => f.id !== newFile.id), verifiedFile]
-        localStorage.setItem("uploadedFiles", JSON.stringify(newStoredFiles))
+        setUploadedFiles(prev => {
+          const updated = prev.map(f => f.id === newFile.id ? verifiedFile : f)
+          updateUser({ uploadedFiles: updated })
+          return updated
+        })
 
       } catch (error) {
         console.error("Verification failed", error)
@@ -246,7 +246,7 @@ export default function DocumentChecklist() {
   const handleDeleteFile = (fileId: string) => {
     const updatedFiles = uploadedFiles.filter((f) => f.id !== fileId)
     setUploadedFiles(updatedFiles)
-    localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles))
+    updateUser({ uploadedFiles: updatedFiles })
   }
 
   const handleViewFile = (file: UploadedFile) => {
@@ -267,7 +267,7 @@ export default function DocumentChecklist() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <FileCheck className="w-8 h-8 text-emerald-600" />
+            <FileCheck className="w-8 h-8 text-blue-600" />
             {language === "hi" ? "दस्तावेज़ चेकलिस्ट" : "Document Checklist"}
           </h1>
           <p className="text-gray-600 mt-2">
@@ -278,7 +278,7 @@ export default function DocumentChecklist() {
         </div>
 
         {/* Secure Badge */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-full text-sm text-emerald-700 font-medium">
+        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-sm text-blue-700 font-medium">
           <Lock className="w-4 h-4" />
           Your data is 256-bit encrypted & secure
         </div>
@@ -296,7 +296,7 @@ export default function DocumentChecklist() {
               {language === "hi" ? "आवश्यक दस्तावेज़ तैयार" : "required documents uploaded"}
             </p>
           </div>
-          <div className="text-3xl font-bold text-emerald-600">{Math.round(progress)}%</div>
+          <div className="text-3xl font-bold text-blue-600">{Math.round(progress)}%</div>
         </div>
         <Progress value={progress} className="h-3" />
 
@@ -304,10 +304,10 @@ export default function DocumentChecklist() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-3 bg-emerald-50 rounded-lg flex items-center gap-2"
+            className="mt-4 p-3 bg-blue-50 rounded-lg flex items-center gap-2"
           >
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <span className="text-emerald-700 font-medium">
+            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+            <span className="text-blue-700 font-medium">
               {language === "hi" ? "सभी आवश्यक दस्तावेज़ तैयार!" : "All required documents uploaded!"}
             </span>
           </motion.div>
@@ -324,8 +324,8 @@ export default function DocumentChecklist() {
           return (
             <Card key={category.id} className="p-6 transition-all hover:shadow-md border-gray-100/50">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <CategoryIcon className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <CategoryIcon className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{language === "hi" ? category.nameHi : category.name}</h3>
@@ -334,7 +334,7 @@ export default function DocumentChecklist() {
                       {uploadedCount} / {categoryDocs.length} {language === "hi" ? "तैयार" : "uploaded"}
                     </p>
                     {uploadedCount === categoryDocs.length && (
-                      <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1">
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3" /> Verified
                       </span>
                     )}
@@ -354,13 +354,13 @@ export default function DocumentChecklist() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       className={`p-4 rounded-xl border transition-all ${isUploaded
-                        ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 shadow-sm"
-                        : "bg-white border-gray-200 hover:border-emerald-200 hover:shadow-sm"
+                        ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm"
+                        : "bg-white border-gray-200 hover:border-blue-200 hover:shadow-sm"
                         }`}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isUploaded ? "bg-emerald-500 text-white shadow-emerald-200 shadow-md" : "bg-gray-100 text-gray-400"
+                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isUploaded ? "bg-blue-500 text-white shadow-blue-200 shadow-md" : "bg-gray-100 text-gray-400"
                             }`}
                         >
                           {isUploaded ? (
@@ -371,7 +371,7 @@ export default function DocumentChecklist() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`font-medium ${isUploaded ? "text-emerald-700" : "text-gray-900"}`}>
+                            <span className={`font-medium ${isUploaded ? "text-blue-700" : "text-gray-900"}`}>
                               {language === "hi" ? doc.nameHi : doc.name}
                             </span>
                             {doc.required && (
@@ -389,10 +389,10 @@ export default function DocumentChecklist() {
                               {docFiles.map((file) => (
                                 <div
                                   key={file.id}
-                                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-emerald-200"
+                                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200"
                                 >
                                   <div className="flex items-center gap-2 flex-1">
-                                    <FileText className="w-4 h-4 text-emerald-600" />
+                                    <FileText className="w-4 h-4 text-blue-600" />
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                                       <p className="text-xs text-gray-500">
@@ -409,7 +409,7 @@ export default function DocumentChecklist() {
                                     </span>
                                   )}
                                   {file.verificationStatus === "verified" && (
-                                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1">
+                                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full flex items-center gap-1">
                                       <ShieldCheck className="w-3 h-3" /> Verified ({file.confidence}%)
                                     </span>
                                   )}
@@ -482,7 +482,7 @@ export default function DocumentChecklist() {
                           />
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="bg-blue-600 hover:bg-blue-700"
                             onClick={() => document.getElementById(`upload-${doc.id}`)?.click()}
                           >
                             <Upload className="w-4 h-4 mr-1" />

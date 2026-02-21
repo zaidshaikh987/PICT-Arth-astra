@@ -10,7 +10,7 @@ export function FinancialHealthChart({ userData }: { userData: any }) {
 
     const data = [
         { name: "Existing EMI", value: existingEMI, color: "#f43f5e" }, // Rose 500
-        { name: "Disposable Income", value: disposable, color: "#10b981" }, // Emerald 500
+        { name: "Disposable Income", value: disposable, color: "#3b82f6" }, // blue-500
     ]
 
     const total = monthlyIncome

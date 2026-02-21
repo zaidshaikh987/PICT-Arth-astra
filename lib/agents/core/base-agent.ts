@@ -1,22 +1,17 @@
-import { GoogleGenAI } from "@google/genai"
 import { Agent, AgentResponse } from "./types"
+import { getGeminiClient, rotateGeminiClient } from "@/lib/ai/gemini-client"
 
 export abstract class BaseAgent implements Agent {
-    protected ai: GoogleGenAI
-    protected model: any // Using any to avoid strict typing issues with the experimental SDK for now
+    protected model: any
     public name: string
     public role: string
 
     constructor(name: string, role: string) {
         this.name = name
         this.role = role
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-        if (!apiKey) {
-            throw new Error("Missing GOOGLE_GENERATIVE_AI_API_KEY. Please add it to .env.local")
-        }
-        this.ai = new GoogleGenAI({ apiKey })
-        // Initialize default model
-        this.model = this.ai.models
+        // Use singleton client with key-rotation
+        const client = getGeminiClient()
+        this.model = client.models
     }
 
     abstract process(input: any): Promise<AgentResponse>
@@ -36,8 +31,10 @@ export abstract class BaseAgent implements Agent {
                     throw error
                 }
 
-                console.warn(`[${this.name}] Quota exceeded for ${modelName}, falling back to next model...`)
-                // Small delay before switching
+                console.warn(`[${this.name}] Quota exceeded for ${modelName}, rotating key and falling back...`)
+                // Rotate to next API key
+                const newClient = rotateGeminiClient()
+                this.model = newClient.models
                 await new Promise(resolve => setTimeout(resolve, 1000))
             }
         }

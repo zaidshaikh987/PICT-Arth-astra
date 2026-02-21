@@ -53,7 +53,7 @@ export default function ProblemStatement() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
             >
-              <Card className="p-8 h-full hover:shadow-xl transition-shadow border-2 hover:border-emerald-200">
+              <Card className="p-8 h-full hover:shadow-xl transition-shadow border-2 hover:border-blue-200">
                 <div className={`${problem.bgColor} w-16 h-16 rounded-2xl flex items-center justify-center mb-6`}>
                   <problem.icon className={`w-8 h-8 ${problem.color}`} />
                 </div>

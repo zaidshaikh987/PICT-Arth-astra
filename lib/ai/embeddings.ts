@@ -1,14 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
+import { getGeminiClient } from "./gemini-client";
 import { COMPANY_KNOWLEDGE } from "../knowledge/company-brain";
 
 /**
  * Google Text Embeddings Engine
  * Uses text-embedding-004 model for semantic vector generation
  */
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
-});
 
 export interface EmbeddingResult {
     text: string;
@@ -21,7 +17,7 @@ export interface EmbeddingResult {
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
     try {
-        const result = await ai.models.embedContent({
+        const result = await getGeminiClient().models.embedContent({
             model: "text-embedding-004",
             contents: text,
         });

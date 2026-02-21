@@ -9,13 +9,13 @@ const stats = [
     icon: Users,
     value: "450M+",
     label: "Indians Served",
-    color: "text-emerald-600",
+    color: "text-blue-600",
   },
   {
     icon: DollarSign,
     value: "₹500Cr+",
     label: "Loans Enabled",
-    color: "text-teal-600",
+    color: "text-indigo-600",
   },
   {
     icon: Star,
@@ -35,7 +35,7 @@ const testimonials = [
   {
     name: "Priya S.",
     location: "Mumbai",
-    text: "I had no credit history and was rejected everywhere. LoanSaathi showed me a clear path to build my score. 6 months later, I got my education loan!",
+    text: "I had no credit history and was rejected everywhere. ArthAstra showed me a clear path to build my score. 6 months later, I got my education loan!",
     rating: 5,
   },
   {
@@ -54,7 +54,7 @@ const testimonials = [
 
 export default function SocialProof() {
   return (
-    <section className="py-20 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50">
       <div className="container mx-auto px-4">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 max-w-6xl mx-auto">

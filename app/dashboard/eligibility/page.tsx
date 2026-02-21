@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/dashboard/dashboard-layout"
 import EligibilityReport from "@/components/dashboard/eligibility-report"
 
 export const metadata = {
-  title: "Eligibility Report - LoanSaathi",
+  title: "Eligibility Report - ArthAstra",
   description: "Your detailed loan eligibility report",
 }
 

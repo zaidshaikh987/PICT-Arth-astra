@@ -1,13 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+import { getGeminiClient } from "./gemini-client";
 
 /**
  * Document Vision Verification
- * Uses gemini-2.0-flash-exp for multimodal document forensics
+ * Uses gemini-2.5-flash for multimodal document forensics
  */
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
-});
 
 export interface VerificationResult {
     isValid: boolean;
@@ -92,7 +88,7 @@ Format: {"isValid": boolean, "confidence": 0-100, "issues": [], "name": "full na
 
         console.log(`📂 Processing document format: ${mimeType}`);
 
-        const result = await ai.models.generateContent({
+        const result = await getGeminiClient().models.generateContent({
             model: MODEL_NAME,
             contents: [
                 {

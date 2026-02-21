@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Gavel, Heart, ShieldAlert, Sparkles, Loader2, User } from "lucide-react"
 
-interface CouncilVisualizerProps {
-    userData: any
-}
+import { useUser } from "@/lib/user-context"
 
-export default function CouncilVisualizer({ userData }: CouncilVisualizerProps) {
-    const [status, setStatus] = useState<"idle" | "meeting" | "decided">("idle")
+export default function CouncilVisualizer() {
+    const { user } = useUser()
+    // Prepare userData from context to ensure it matches API expectation
+    const userData = user ? { ...user, isJointApplication: user.isJointApplication } : null
+    const [status, setStatus] = useState<"idle" | "meeting" | "decided" | "error">("idle")
     const [result, setResult] = useState<any>(null)
 
     const startCouncil = async () => {
+        if (!userData) return
         setStatus("meeting")
         try {
             const res = await fetch("/api/council-meeting", {
@@ -22,6 +24,7 @@ export default function CouncilVisualizer({ userData }: CouncilVisualizerProps) 
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(userData),
             })
+            if (!res.ok) throw new Error("API error")
             const data = await res.json()
             // Simulate reading time for effect
             setTimeout(() => {
@@ -30,7 +33,7 @@ export default function CouncilVisualizer({ userData }: CouncilVisualizerProps) 
             }, 2000)
         } catch (e) {
             console.error(e)
-            setStatus("idle")
+            setStatus("error")
         }
     }
 
@@ -67,6 +70,20 @@ export default function CouncilVisualizer({ userData }: CouncilVisualizerProps) 
                             <User className="w-8 h-8 text-red-400 animate-bounce" style={{ animationDelay: "150ms" }} />
                             <User className="w-8 h-8 text-yellow-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                         </div>
+                    </div>
+                )}
+
+                {status === "error" && (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <ShieldAlert className="w-12 h-12 text-red-400" />
+                        <p className="text-red-300 font-medium">Something went wrong. The Council couldn't convene.</p>
+                        <Button
+                            onClick={startCouncil}
+                            variant="outline"
+                            className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10"
+                        >
+                            Try Again
+                        </Button>
                     </div>
                 )}
 

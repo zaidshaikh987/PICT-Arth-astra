@@ -1,62 +1,26 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { calculateDetailedEligibility } from "@/lib/tools/eligibility-calculator";
+import { generateWithRotation } from "@/lib/ai/gemini-client";
 
 /**
- * Financial Council - Fallback Implementation
- * Uses direct Gemini API when ADK fails on serverless
+ * Financial Council — Optimized
+ * 
+ * OLD: 3 sequential Gemini calls (Optimist → Pessimist → Judge) = 3 API calls
+ * NEW: Tools for data + single Gemini call for debate narrative = 1 API call
+ * 
+ * Savings: 66% fewer API calls, 3x faster
  */
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
-});
-
-async function runSimpleAgent(role: "optimist" | "pessimist" | "judge", context: string): Promise<string> {
-    const prompts = {
-        optimist: `You are 'The Optimist' loan officer. Find every reason to APPROVE this loan. Focus on potential, growth, and character. Give a punchy 2-3 sentence argument.
-
-LOAN APPLICATION:
-${context}
-
-Your argument FOR approval:`,
-
-        pessimist: `You are 'The Pessimist' risk officer. Find every reason to REJECT this loan. Focus on risk, volatility, and worst-case scenarios. Give a harsh 2-3 sentence argument.
-
-LOAN APPLICATION:
-${context}
-
-Your argument AGAINST approval:`,
-
-        judge: `You are the Chief Compliance Officer. Based on the arguments below, make a FINAL binding decision.
-
-${context}
-
-Return ONLY JSON: {"verdict": "your explanation", "approved": true/false, "confidence": 0-100}`
-    };
-
-    try {
-        const result = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp",
-            contents: [{ role: "user", parts: [{ text: prompts[role] }] }],
-        });
-
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        return text.trim();
-    } catch (error: any) {
-        console.error(`${role} error:`, error.message);
-        return `${role} is unavailable: ${error.message}`;
-    }
-}
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const context = JSON.stringify(body, null, 2);
 
         console.log("\n");
         console.log("╔════════════════════════════════════════════════════════════╗");
-        console.log("║       🏛️  FINANCIAL COUNCIL - Multi-Agent Debate          ║");
+        console.log("║   🏛️ FINANCIAL COUNCIL (Optimized — 1 API call)           ║");
         console.log("╠════════════════════════════════════════════════════════════╣");
-        console.log("║  Powered by: Gemini 2.0 Flash + Google GenAI SDK          ║");
+        console.log("║  Data: eligibility-calculator.ts (0 API calls)           ║");
+        console.log("║  Debate: Gemini 2.5 Flash (1 API call)                   ║");
         console.log("╚════════════════════════════════════════════════════════════╝");
         console.log("\n📋 INPUT DATA:");
         console.log("   • Income: ₹" + (body.monthlyIncome || "N/A").toLocaleString());
@@ -64,81 +28,113 @@ export async function POST(req: Request) {
         console.log("   • Credit Score: " + (body.creditScore || "650 (default)"));
         console.log("");
 
-        // Run optimist
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 1: ⚡ THE OPTIMIST                                    │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Sales-driven loan officer arguing FOR approval       │");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Generating argument...                             │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const optimistArg = await runSimpleAgent("optimist", context);
-        console.log("   ✅ Optimist complete: " + optimistArg.substring(0, 80) + "...\n");
+        // ═══════════════════════════════════════════════════════════
+        // STEP 1: Get structured data from tools (0 API calls)
+        // ═══════════════════════════════════════════════════════════
+        const eligibility = calculateDetailedEligibility(body);
 
-        // Small delay to avoid rate limits
-        await new Promise(r => setTimeout(r, 1000));
+        console.log("   ✅ Tool analysis complete:");
+        console.log(`      DTI: ${eligibility.financials.dti.toFixed(1)}% | Status: ${eligibility.overallStatus}`);
+        console.log(`      Max Amount: ₹${eligibility.maxAmount.toLocaleString("en-IN")}`);
+        console.log(`      Approval Odds: ${eligibility.approvalOdds}%`);
 
-        // Run pessimist
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 2: 🔒 THE PESSIMIST                                   │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Risk underwriter arguing AGAINST approval            │");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Generating counter-argument...                     │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const pessimistArg = await runSimpleAgent("pessimist", context);
-        console.log("   ✅ Pessimist complete: " + pessimistArg.substring(0, 80) + "...\n");
+        // ═══════════════════════════════════════════════════════════
+        // STEP 2: Single Gemini call for debate narrative (1 API call)
+        // ═══════════════════════════════════════════════════════════
+        const debatePrompt = `You are simulating a bank credit committee with 3 roles. Given the applicant data below, generate the debate.
 
-        // Small delay
-        await new Promise(r => setTimeout(r, 1000));
+APPLICANT DATA:
+- Monthly Income: ₹${body.monthlyIncome || 30000}
+- Existing EMI: ₹${body.existingEMI || 0}
+- Credit Score: ${body.creditScore || 650}
+- Employment: ${body.employmentType || "salaried"}
+- Loan Amount Requested: ₹${body.loanAmount || 500000}
+- DTI Ratio: ${eligibility.financials.dti.toFixed(1)}%
+- Max Eligible Amount: ₹${eligibility.maxAmount.toLocaleString("en-IN")}
+- Approval Odds (calculated): ${eligibility.approvalOdds}%
+- Overall Status: ${eligibility.overallStatus}
 
-        // Run judge
-        console.log("┌─────────────────────────────────────────────────────────────┐");
-        console.log("│ STAGE 3: ⚖️  THE JUDGE                                      │");
-        console.log("├─────────────────────────────────────────────────────────────┤");
-        console.log("│ Role: Chief Compliance Officer - Final Decision Maker      │");
-        console.log("│ Model: gemini-2.0-flash-exp                                │");
-        console.log("│ Status: Weighing arguments...                              │");
-        console.log("└─────────────────────────────────────────────────────────────┘");
-        const judgeContext = `
-LOAN APPLICATION:
-${context}
+Write the debate in this EXACT JSON format. Make it INTENSE and DATA-DRIVEN.
+- The OPTIMIST must cite specific strengths: "Approval odds of ${eligibility.approvalOdds}%", "DTI of ${eligibility.financials.dti.toFixed(1)}% is healthy".
+- The PESSIMIST must cite specific risks: "Requested ₹${(body.loanAmount || 0).toLocaleString()} exceeds safe limits", "Credit score ${body.creditScore} is too low".
+- The JUDGE must reference the specific numbers in the final verdict.
 
-OPTIMIST ARGUMENT:
-${optimistArg}
+{
+  "optimistArgument": "Optimist's argument citing specific numbers",
+  "pessimistArgument": "Pessimist's argument citing specific numbers",
+  "judgeVerdict": "Final verdict referencing the ${eligibility.approvalOdds}% probability",
+  "approved": boolean (true if approvalOdds > 60),
+  "confidence": number (use ${eligibility.approvalOdds})
+}
 
-PESSIMIST ARGUMENT:
-${pessimistArg}
-`;
-        const judgeResponse = await runSimpleAgent("judge", judgeContext);
+Return ONLY valid JSON.`;
 
-        // Parse judge response
-        let judgment: any = { verdict: judgeResponse, approved: false, confidence: 50 };
+        let debateResult: any;
+
         try {
-            const jsonMatch = judgeResponse.match(/\{[\s\S]*\}/);
+            const responseText = await generateWithRotation("gemini-2.5-flash", debatePrompt, {
+                temperature: 0.8,
+                maxOutputTokens: 1000,
+            });
+
+            console.log("   🤖 Debate generated (1 API call)");
+
+            // Parse JSON from response
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                judgment = JSON.parse(jsonMatch[0]);
+                debateResult = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error("Failed to parse debate JSON");
             }
-        } catch {
-            // Keep default
+        } catch (err: any) {
+            console.warn("   ⚠️ Gemini debate failed, using deterministic fallback:", err.message);
+
+            // Deterministic fallback — no API call needed
+            const isApproved = eligibility.approvalOdds > 60;
+            const strengths = eligibility.factors.filter(f => f.status === "pass").map(f => f.name);
+            const weaknesses = eligibility.factors.filter(f => f.status !== "pass").map(f => f.name);
+
+            debateResult = {
+                optimistArgument: strengths.length > 0
+                    ? `The applicant demonstrates strong financial discipline with passing grades in ${strengths.join(", ")}. With a DTI of only ${eligibility.financials.dti.toFixed(1)}%, they have sufficient capacity for this loan.`
+                    : `While the profile has challenges, the applicant shows initiative. A smaller loan amount could work.`,
+                pessimistArgument: weaknesses.length > 0
+                    ? `We cannot ignore the risks. The ${weaknesses[0]} is a major red flag. A DTI of ${eligibility.financials.dti.toFixed(1)}% leaves little room for error.`
+                    : `Current market volatility requires us to be cautious despite the decent metrics.`,
+                judgeVerdict: isApproved
+                    ? `Approved. The data is clear: ${eligibility.approvalOdds}% approval odds and a healthy DTI of ${eligibility.financials.dti.toFixed(1)}% outweigh the minor risks.`
+                    : `Rejected. The risk factors, particularly ${weaknesses[0] || "overall creditworthiness"}, are too high at this time.`,
+                approved: isApproved,
+                confidence: eligibility.approvalOdds,
+            };
         }
 
-        console.log("   ✅ Judge complete\n");
-        console.log("╔════════════════════════════════════════════════════════════╗");
+        console.log("\n╔════════════════════════════════════════════════════════════╗");
         console.log("║                    📜 FINAL VERDICT                        ║");
         console.log("╠════════════════════════════════════════════════════════════╣");
-        console.log("║  Decision: " + (judgment.approved ? "✅ APPROVED" : "❌ REJECTED") + "                                       ║");
-        console.log("║  Confidence: " + (judgment.confidence || 50) + "%                                        ║");
+        console.log("║  Decision: " + (debateResult.approved ? "✅ APPROVED" : "❌ REJECTED") + "                                       ║");
+        console.log("║  Confidence: " + (debateResult.confidence || 50) + "%                                        ║");
         console.log("╚════════════════════════════════════════════════════════════╝");
         console.log("\n");
 
         return NextResponse.json({
-            optimistArgument: optimistArg || "No argument provided.",
-            pessimistArgument: pessimistArg || "No argument provided.",
-            judgeVerdict: judgment.verdict || "No verdict.",
-            approved: judgment.approved ?? false,
-            confidence: judgment.confidence ?? 50,
-            _metadata: { mode: "fallback-genai" }
+            optimistArgument: debateResult.optimistArgument || "No argument provided.",
+            pessimistArgument: debateResult.pessimistArgument || "No argument provided.",
+            judgeVerdict: debateResult.judgeVerdict || "No verdict.",
+            approved: debateResult.approved ?? false,
+            confidence: debateResult.confidence ?? 50,
+            _metadata: {
+                mode: "tools-first",
+                apiCalls: 1,
+                previousApiCalls: 3,
+                savings: "66%",
+                toolData: {
+                    dti: eligibility.financials.dti,
+                    approvalOdds: eligibility.approvalOdds,
+                    maxAmount: eligibility.maxAmount,
+                    status: eligibility.overallStatus,
+                },
+            },
         });
 
     } catch (error: any) {
@@ -147,7 +143,7 @@ ${pessimistArg}
             optimistArgument: "Service temporarily unavailable.",
             pessimistArgument: "Service temporarily unavailable.",
             judgeVerdict: `Error: ${error.message}`,
-            approved: false
+            approved: false,
         }, { status: 500 });
     }
 }

@@ -79,23 +79,26 @@ const navigationCommands: Record<string, { paths: string[]; keywords: { en: stri
   },
   loans: {
     paths: ["/dashboard/loans"],
-    keywords: { en: ["loans", "loan comparison", "compare loans", "loan options"], hi: ["ऋण", "लोन", "तुलना"] },
+    keywords: { en: ["loans", "loan comparison", "compare loans", "loan options", "find loan", "best loan"], hi: ["ऋण", "लोन", "तुलना", "सर्वोत्तम ऋण"] },
   },
   optimizer: {
     paths: ["/dashboard/optimizer"],
-    keywords: { en: ["optimizer", "credit optimizer", "credit path"], hi: ["ऑप्टिमाइज़र", "क्रेडिट"] },
+    keywords: { en: ["optimizer", "credit optimizer", "credit path", "improve score", "fix credit"], hi: ["ऑप्टिमाइज़र", "क्रेडिट", "स्कोर सुधारें"] },
   },
   timeline: {
     paths: ["/dashboard/timeline"],
-    keywords: { en: ["timeline", "application timeline", "track application"], hi: ["टाइमलाइन", "आवेदन"] },
+    keywords: {
+      en: ["timeline", "application timeline", "track application", "my application", "status", "application"],
+      hi: ["टाइमलाइन", "आवेदन", "स्थिति", "मेरा आवेदन"],
+    },
   },
   documents: {
     paths: ["/dashboard/documents"],
-    keywords: { en: ["documents", "document checklist", "upload documents"], hi: ["दस्तावेज़", "डॉक्युमेंट"] },
+    keywords: { en: ["documents", "document checklist", "upload documents", "checklist"], hi: ["दस्तावेज़", "डॉक्युमेंट", "चेकलिस्ट"] },
   },
   rejection: {
     paths: ["/dashboard/rejection-recovery"],
-    keywords: { en: ["rejection", "recovery", "rejection recovery"], hi: ["अस्वीकृति"] },
+    keywords: { en: ["rejection", "recovery", "rejection recovery", "help me"], hi: ["अस्वीकृति", "मदद"] },
   },
   onboarding: {
     paths: ["/onboarding"],
@@ -103,6 +106,26 @@ const navigationCommands: Record<string, { paths: string[]; keywords: { en: stri
       en: ["onboarding", "start application", "apply", "new application", "fill form"],
       hi: ["आवेदन", "नया", "फॉर्म भरो"],
     },
+  },
+  settings: {
+    paths: ["/dashboard/settings"],
+    keywords: { en: ["settings", "profile", "account"], hi: ["सेटिंग्स", "प्रोफाइल", "खाता"] },
+  },
+  learn: {
+    paths: ["/dashboard/learn"],
+    keywords: { en: ["learn", "learning center", "knowledge", "tutorials"], hi: ["सीखें", "ज्ञान", "ट्यूटोरियल"] },
+  },
+  quiz: {
+    paths: ["/dashboard/quiz"],
+    keywords: { en: ["quiz", "test", "financial quiz", "exam"], hi: ["क्विज़", "परीक्षा", "टेस्ट"] },
+  },
+  multigoal: {
+    paths: ["/dashboard/multi-goal"],
+    keywords: { en: ["multi-goal", "planner", "goal planner", "future plan", "goals"], hi: ["लक्ष्य", "प्लानर", "भविष्य"] },
+  },
+  peers: {
+    paths: ["/dashboard/peers"],
+    keywords: { en: ["peers", "community", "insights", "peer insights", "others"], hi: ["समुदाय", "साथी", "इनसाइट्स"] },
   },
 }
 
@@ -144,7 +167,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const recognitionRef = useRef<any>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const useGeminiRef = useRef(true) // Use Gemini 2.5 Flash for transcription
+  const useGeminiRef = useRef(false) // Default to Web Speech API for reliability (Gemini requires Key)
   const synthRef = useRef<SpeechSynthesis | null>(null)
   const onFieldUpdateRef = useRef<((fieldId: string, value: any) => void) | null>(null)
   const onStepChangeRef = useRef<((direction: "next" | "back") => void) | null>(null)
@@ -156,6 +179,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const registeredFieldsRef = useRef<FormField[]>([])
   const isRecognitionActiveRef = useRef(false)
   const processVoiceInputRef = useRef<((input: string) => Promise<void>) | null>(null)
+  // Guard: only auto-listen after speaking a QUESTION, not after errors/hints/completion
+  const shouldAutoListenRef = useRef(false)
 
   useEffect(() => {
     isFormModeRef.current = isFormMode
@@ -224,13 +249,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
 
         setIsListening(false)
         isRecognitionActiveRef.current = false
-
-        // Auto-restart if in form mode
-        if (isFormModeRef.current && isAutoModeRef.current) {
-          autoListenTimeoutRef.current = setTimeout(() => {
-            startListeningInternal()
-          }, 500)
-        }
+        // Do NOT auto-restart here — let processVoiceInput → speak() handle the flow
       }
     } catch (error) {
       console.error("[Gemini] Audio processing error:", error)
@@ -328,10 +347,12 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
           setIsSpeaking(false)
           resolve()
 
-          if (isFormModeRef.current && isAutoModeRef.current) {
+          // Only auto-listen after speaking a QUESTION prompt, not after errors/hints/completion
+          if (isFormModeRef.current && isAutoModeRef.current && shouldAutoListenRef.current) {
+            shouldAutoListenRef.current = false // reset the flag
             autoListenTimeoutRef.current = setTimeout(() => {
               startListeningInternal()
-            }, 200)
+            }, 300)
           }
         }
 
@@ -373,6 +394,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
           type: "question",
         })
 
+        shouldAutoListenRef.current = true
         speak(fullQuestion)
       }
     },
@@ -390,14 +412,36 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       const question = nextField.question[language]
 
       addChatMessage({ role: "assistant", content: question, type: "question" })
+      // Mark that auto-listen should happen after this question
+      shouldAutoListenRef.current = true
       await speak(question)
     } else {
+      // ALL FIELDS DONE — stop form mode to prevent infinite loop
       const completeMsg =
         language === "en"
-          ? "All fields completed! Say 'next' to continue to the next step."
-          : "सभी फ़ील्ड पूर्ण हो गए! अगले चरण पर जाने के लिए 'अगला' कहें।"
+          ? "All fields completed! Click 'Next' to continue to the next step."
+          : "सभी फ़ील्ड पूर्ण हो गए! अगले चरण पर जाने के लिए 'Next' बटन दबाएं।"
       addChatMessage({ role: "assistant", content: completeMsg, type: "info" })
+      shouldAutoListenRef.current = false // do NOT auto-listen after completion
       await speak(completeMsg)
+      // Stop form mode — this step's fields are exhausted (inline to avoid circular dep)
+      setIsFormMode(false)
+      isFormModeRef.current = false
+      setIsAutoMode(false)
+      isAutoModeRef.current = false
+      // Inline stop: clear timeouts, stop recorder/recognition
+      if (autoListenTimeoutRef.current) {
+        clearTimeout(autoListenTimeoutRef.current)
+        autoListenTimeoutRef.current = null
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        try { mediaRecorderRef.current.stop() } catch (e) { }
+      }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch (e) { }
+      }
+      isRecognitionActiveRef.current = false
+      setIsListening(false)
     }
   }, [currentFieldIndex, registeredFields, language, speak, addChatMessage])
 
@@ -598,6 +642,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
                 ? `I heard "${input}". Please say a number like "50 thousand" or "5 lakh". Or say "skip" to move on.`
                 : `मैंने "${input}" सुना। कृपया एक संख्या बोलें जैसे "50 हजार" या "5 लाख"। या "छोड़ो" बोलें।`
             addChatMessage({ role: "assistant", content: hintMsg, type: "info" })
+            // Re-enable auto-listen so user can retry this field
+            shouldAutoListenRef.current = true
             await speak(hintMsg)
             return
           }
@@ -657,6 +703,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
                 ? `Please choose one: ${optionsList}. Or say "skip".`
                 : `कृपया चुनें: ${optionsList}। या "छोड़ो" बोलें।`
             addChatMessage({ role: "assistant", content: errorMsg, type: "info" })
+            // Re-enable auto-listen so user can retry
+            shouldAutoListenRef.current = true
             await speak(errorMsg)
             return
           }
@@ -673,6 +721,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
           } else {
             const errorMsg = language === "en" ? "Please say 'yes' or 'no'." : "कृपया 'हां' या 'नहीं' बोलें।"
             addChatMessage({ role: "assistant", content: errorMsg, type: "info" })
+            // Re-enable auto-listen so user can retry
+            shouldAutoListenRef.current = true
             await speak(errorMsg)
             return
           }
@@ -744,12 +794,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       recognition.onend = () => {
         isRecognitionActiveRef.current = false
         setIsListening(false)
-
-        if (isFormModeRef.current && isAutoModeRef.current && !isSpeaking) {
-          autoListenTimeoutRef.current = setTimeout(() => {
-            startListeningInternal()
-          }, 200)
-        }
+        // Do NOT auto-restart here — let the speak() → shouldAutoListenRef flow handle it
       }
 
       recognition.onerror = (event: any) => {
@@ -757,10 +802,11 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         setIsListening(false)
 
         if (event.error === "no-speech" || event.error === "audio-capture") {
-          if (isFormModeRef.current && isAutoModeRef.current) {
+          // Only retry if we are actively waiting for a question answer
+          if (isFormModeRef.current && isAutoModeRef.current && shouldAutoListenRef.current) {
             autoListenTimeoutRef.current = setTimeout(() => {
               startListeningInternal()
-            }, 500)
+            }, 800)
           }
         } else if (event.error !== "aborted") {
           console.log("[v0] Speech error:", event.error)
@@ -844,6 +890,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
     const firstField = registeredFields[0]
     const question = firstField.question[language]
     addChatMessage({ role: "assistant", content: question, type: "question" })
+    shouldAutoListenRef.current = true
     await speak(question)
   }, [registeredFields, language, speak, addChatMessage, clearChat])
 

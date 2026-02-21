@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useUser } from "@/lib/user-context"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,16 +16,16 @@ export default function LoanComparison() {
   const [filter, setFilter] = useState("all")
   const [sortBy, setSortBy] = useState("rate")
   const [expandedLoan, setExpandedLoan] = useState<number | null>(null)
+  const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null)
+  const { user, updateUser } = useUser()
   const { language } = useLanguage()
 
   useEffect(() => {
-    const data = localStorage.getItem("onboardingData")
-    if (data) {
-      const parsedData = JSON.parse(data)
-      const generatedLoans = generateLoanOffers(parsedData)
-      setLoans(generatedLoans)
+    if (user) {
+      const offers = generateLoanOffers(user)
+      setLoans(offers)
     }
-  }, [])
+  }, [user])
 
   const filteredLoans = loans
     .filter((loan) => filter === "all" || loan.category === filter)
@@ -49,7 +50,7 @@ export default function LoanComparison() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${filter === f
-                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
                 : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
                 }`}
             >
@@ -61,7 +62,7 @@ export default function LoanComparison() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="ml-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="ml-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="rate">{getTranslation(language, "lowestInterestRate")}</option>
           <option value="emi">{getTranslation(language, "lowestEMI")}</option>
@@ -73,7 +74,7 @@ export default function LoanComparison() {
         {filteredLoans.map((loan, index) => (
           <Card
             key={index}
-            className={`overflow-hidden transition-all duration-300 hover:shadow-xl ${loan.isRecommended ? "ring-2 ring-emerald-500 shadow-lg" : "border border-gray-200"
+            className={`overflow-hidden transition-all duration-300 hover:shadow-xl ${loan.isRecommended ? "ring-2 ring-blue-500 shadow-lg" : "border border-gray-200"
               }`}
           >
             {loan.isRecommended && (
@@ -96,8 +97,8 @@ export default function LoanComparison() {
                 {/* Bank Info */}
                 <div className="lg:col-span-3">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-7 h-7 text-emerald-700" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-7 h-7 text-blue-700" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">{loan.bankName}</h3>
@@ -109,7 +110,7 @@ export default function LoanComparison() {
                       <span className="text-xs font-medium text-gray-600">
                         {getTranslation(language, "approvalOdds")}
                       </span>
-                      <span className="text-sm font-bold text-emerald-600">{loan.approvalOdds}%</span>
+                      <span className="text-sm font-bold text-blue-600">{loan.approvalOdds}%</span>
                     </div>
                     <Progress value={loan.approvalOdds} className="h-2 bg-gray-100" />
                   </div>
@@ -122,7 +123,7 @@ export default function LoanComparison() {
                       <Percent className="w-4 h-4" />
                       <span className="text-xs font-medium">{getTranslation(language, "interestRate")}</span>
                     </div>
-                    <div className="text-3xl font-bold text-emerald-600">{loan.rate}%</div>
+                    <div className="text-3xl font-bold text-blue-600">{loan.rate}%</div>
                     <span className="text-xs text-gray-500">p.a.</span>
                   </div>
 
@@ -159,10 +160,21 @@ export default function LoanComparison() {
                 <div className="lg:col-span-3 flex flex-col gap-3">
                   <Button
                     onClick={() => {
-                      localStorage.setItem("selectedLoan", JSON.stringify(loan))
+                      updateUser({
+                        selectedLoan: loan,
+                        // Advance the timeline automatically or trigger submission state
+                        timelineSimulation: {
+                          ...user.timelineSimulation,
+                          appSubmitStatus: 'completed',
+                          appSubmittedAt: Date.now(),
+                          // Also clear future stages if restarting?
+                          approvalStatus: 'pending',
+                          approvedAt: undefined
+                        }
+                      })
                       window.location.href = "/dashboard/timeline"
                     }}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 h-11"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 h-11"
                   >
                     {getTranslation(language, "applyNow")}
                   </Button>
@@ -188,7 +200,7 @@ export default function LoanComparison() {
                       <ul className="space-y-2">
                         {loan.features?.map((feature: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             {feature}
                           </li>
                         ))}
@@ -211,7 +223,7 @@ export default function LoanComparison() {
                         </div>
                         <div className="flex justify-between pt-2 border-t">
                           <span className="text-gray-900 font-semibold">Total Repayment</span>
-                          <span className="font-bold text-emerald-600">₹{loan.totalCost.toLocaleString("en-IN")}</span>
+                          <span className="font-bold text-blue-600">₹{loan.totalCost.toLocaleString("en-IN")}</span>
                         </div>
                       </div>
                     </div>
@@ -223,7 +235,7 @@ export default function LoanComparison() {
                 <div className="mt-5 pt-5 border-t border-gray-100">
                   <div className="flex flex-wrap gap-2">
                     {loan.features.slice(0, 3).map((feature: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="bg-emerald-50 text-emerald-700 border-0">
+                      <Badge key={idx} variant="secondary" className="bg-blue-50 text-blue-700 border-0">
                         {feature}
                       </Badge>
                     ))}
@@ -235,17 +247,17 @@ export default function LoanComparison() {
         ))}
       </div>
 
-      <Card className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-0 shadow-lg">
+      <Card className="bg-gradient-to-r from-blue-50 via-indigo-50 to-cyan-50 border-0 shadow-lg">
         <div className="p-8">
           <div className="flex items-start gap-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">{getTranslation(language, "needHelp")}</h3>
               <p className="text-gray-700 mb-5 text-lg leading-relaxed">{getTranslation(language, "aiHelperText")}</p>
               <Link href="/dashboard/chat">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 h-11 px-6">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 h-11 px-6">
                   {getTranslation(language, "talkToAssistant")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

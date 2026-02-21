@@ -299,7 +299,7 @@ export default function OnboardingWizard() {
     setFormData((prev) => ({ ...prev, ...data }))
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -312,9 +312,19 @@ export default function OnboardingWizard() {
         }, 1000)
       }
     } else {
-      localStorage.setItem("onboardingData", JSON.stringify(formData))
-      localStorage.setItem("loanProfile", JSON.stringify(formData))
-      window.location.href = "/dashboard"
+      // Save to MongoDB
+      try {
+        const res = await fetch("/api/user/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, onboardingStep: 5 }),
+        })
+        if (!res.ok) throw new Error("Registration failed")
+        window.location.href = "/dashboard"
+      } catch (err) {
+        console.error("Registration error:", err)
+        alert("Failed to save your profile. Please try again.")
+      }
     }
   }
 
@@ -325,14 +335,17 @@ export default function OnboardingWizard() {
     }
   }
 
-  const handleSave = () => {
-    localStorage.setItem("onboardingData", JSON.stringify(formData))
-    localStorage.setItem("onboardingStep", currentStep.toString())
-    // Ensure session is active if they are deep in the process
-    if (currentStep > 1) {
-      localStorage.setItem("arthAstraSession", "true")
+  const handleSave = async () => {
+    try {
+      await fetch("/api/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, onboardingStep: currentStep }),
+      })
+      alert("Progress saved! You can continue later.")
+    } catch {
+      alert("Failed to save progress.")
     }
-    alert("Progress saved! You can continue later.")
   }
 
   const handleVoiceFill = () => {
@@ -360,7 +373,7 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-8">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-8">
       <div className="container mx-auto max-w-5xl px-4">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
           {/* Left Side - Image Carousel */}
@@ -400,13 +413,13 @@ export default function OnboardingWizard() {
             <div className="mt-6 p-5 bg-white rounded-xl shadow-md border border-gray-100">
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isFormMode ? "bg-emerald-500" : "bg-gradient-to-br from-emerald-100 to-teal-100"
+                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isFormMode ? "bg-blue-500" : "bg-gradient-to-br from-blue-100 to-indigo-100"
                     }`}
                 >
                   {isFormMode ? (
                     <Volume2 className="w-6 h-6 text-white animate-pulse" />
                   ) : (
-                    <Mic className="w-6 h-6 text-emerald-600" />
+                    <Mic className="w-6 h-6 text-blue-600" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -432,7 +445,7 @@ export default function OnboardingWizard() {
                   {!isFormMode && (
                     <Button
                       onClick={handleVoiceFill}
-                      className="mt-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white gap-2"
+                      className="mt-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white gap-2"
                       size="sm"
                     >
                       <Mic className="w-4 h-4" />
@@ -444,19 +457,19 @@ export default function OnboardingWizard() {
                     <div className="mt-3 flex items-center gap-2">
                       <div className="flex gap-1">
                         <span
-                          className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
                           style={{ animationDelay: "0ms" }}
                         />
                         <span
-                          className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
                           style={{ animationDelay: "150ms" }}
                         />
                         <span
-                          className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
                           style={{ animationDelay: "300ms" }}
                         />
                       </div>
-                      <span className="text-sm text-emerald-600 font-medium">
+                      <span className="text-sm text-blue-600 font-medium">
                         {isSpeaking
                           ? voiceLanguage === "en"
                             ? "Speaking..."
@@ -491,7 +504,7 @@ export default function OnboardingWizard() {
             <div className="mb-8 bg-white rounded-2xl p-6 shadow-md">
               <div className="flex justify-between items-center mb-3">
                 <div>
-                  <span className="text-sm font-semibold text-emerald-700">
+                  <span className="text-sm font-semibold text-blue-700">
                     Step {currentStep} of {totalSteps}
                   </span>
                   <h2 className="text-lg font-bold text-gray-900 mt-1">
@@ -502,7 +515,7 @@ export default function OnboardingWizard() {
                     {currentStep === 5 && "Enhancements"}
                   </h2>
                 </div>
-                <span className="text-2xl font-bold text-emerald-600">{Math.round(progress)}%</span>
+                <span className="text-2xl font-bold text-blue-600">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-3" />
             </div>
@@ -512,7 +525,7 @@ export default function OnboardingWizard() {
                 variant={isFormMode ? "destructive" : "default"}
                 size="sm"
                 onClick={isFormMode ? stopFormFilling : handleVoiceFill}
-                className={`gap-2 ${!isFormMode && "bg-emerald-600 hover:bg-emerald-700"}`}
+                className={`gap-2 ${!isFormMode && "bg-blue-600 hover:bg-blue-700"}`}
               >
                 {isFormMode ? (
                   <>
@@ -547,7 +560,7 @@ export default function OnboardingWizard() {
                 <Button
                   onClick={handleBack}
                   variant="outline"
-                  className="border-2 border-emerald-200 hover:bg-emerald-50 bg-transparent"
+                  className="border-2 border-blue-200 hover:bg-blue-50 bg-transparent"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
@@ -556,7 +569,7 @@ export default function OnboardingWizard() {
                 <div />
               )}
 
-              <Button onClick={handleSave} variant="ghost" className="text-gray-600 hover:text-emerald-700">
+              <Button onClick={handleSave} variant="ghost" className="text-gray-600 hover:text-blue-700">
                 <Save className="w-4 h-4 mr-2" />
                 Save & Continue Later
               </Button>

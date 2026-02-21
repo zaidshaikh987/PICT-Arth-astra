@@ -11,7 +11,7 @@ const steps = [
     icon: FileText,
     title: "Share Basic Details",
     description: "Tell us about your income, employment, and loan needs. Takes just 2 minutes.",
-    color: "bg-emerald-500",
+    color: "bg-blue-500",
   },
   {
     number: "02",
@@ -19,7 +19,7 @@ const steps = [
     title: "Get Instant Eligibility",
     description:
       "Our system analyzes your profile and shows your eligibility, credit readiness score, and personalized roadmap.",
-    color: "bg-teal-500",
+    color: "bg-indigo-500",
   },
   {
     number: "03",
@@ -87,7 +87,7 @@ export default function HowItWorks() {
           className="text-center mt-12"
         >
           <Link href="/onboarding">
-            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg rounded-full">
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg rounded-full">
               Start Your Journey
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>

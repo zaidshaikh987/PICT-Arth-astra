@@ -9,13 +9,13 @@ const features = [
     icon: Brain,
     title: "AI-Powered Eligibility",
     description: "Instant loan eligibility check with transparent scoring system",
-    gradient: "from-emerald-500 to-teal-500",
+    gradient: "from-blue-500 to-indigo-500",
   },
   {
     icon: Target,
     title: "Credit Path Optimizer",
     description: "Get personalized roadmap to improve your loan approval chances",
-    gradient: "from-teal-500 to-cyan-500",
+    gradient: "from-indigo-500 to-cyan-500",
   },
   {
     icon: TrendingUp,
@@ -53,7 +53,7 @@ export default function FeaturesOverview() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Why Choose LoanSaathi?</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Why Choose ArthAstra?</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Intelligent loan guidance powered by AI, designed for every Indian borrower
           </p>
@@ -68,7 +68,7 @@ export default function FeaturesOverview() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="p-8 h-full hover:shadow-2xl transition-all duration-300 group border-2 hover:border-emerald-200">
+              <Card className="p-8 h-full hover:shadow-2xl transition-all duration-300 group border-2 hover:border-blue-200">
                 <div
                   className={`bg-gradient-to-br ${feature.gradient} w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}
                 >

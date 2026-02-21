@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/dashboard/dashboard-layout"
 import SettingsPage from "@/components/dashboard/settings"
 
 export const metadata = {
-  title: "Settings - LoanSaathi",
+  title: "Settings - ArthAstra",
   description: "Manage your account settings",
 }
 

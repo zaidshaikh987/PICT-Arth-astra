@@ -1,12 +1,15 @@
 import { calculateDetailedEligibility } from "./eligibility-calculator";
 
 /**
- * Agent Tool: Calculate Debt-to-Income Ratio
+ * Agent Tool: Calculate Debt-to-Income Ratio (Banking Standard FOIR)
  * Used by: Investigator Agent
+ * DTI = Fixed Obligations (EMIs/Loans) / Gross Income × 100
+ * Note: Living expenses are NOT included in DTI per banking standards
  */
-export function calculateDTI(monthlyIncome: number, existingEMI: number, monthlyExpenses: number): number {
-    const total = monthlyIncome > 0 ? ((existingEMI + monthlyExpenses) / monthlyIncome) * 100 : 0;
-    return Math.round(total * 10) / 10;
+export function calculateDTI(monthlyIncome: number, existingEMI: number, _monthlyExpenses?: number): number {
+    // Banking-standard DTI uses ONLY debt obligations (EMIs), not living expenses
+    const dti = monthlyIncome > 0 ? (existingEMI / monthlyIncome) * 100 : 0;
+    return Math.round(dti * 10) / 10;
 }
 
 /**

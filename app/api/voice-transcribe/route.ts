@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { getGeminiClient } from "@/lib/ai/gemini-client";
 
 /**
  * Voice Transcription API
  * Uses Gemini 2.5 Flash for speech-to-text
  */
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
-});
 
 export async function POST(req: Request) {
     try {
@@ -42,7 +38,7 @@ export async function POST(req: Request) {
         console.log("   📦 Audio MIME Type:", mimeType);
 
         // Call Gemini with audio input
-        const result = await ai.models.generateContent({
+        const result = await getGeminiClient().models.generateContent({
             model: "gemini-2.5-flash",
             contents: [
                 {

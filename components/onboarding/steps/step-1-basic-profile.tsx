@@ -49,7 +49,7 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
   }
 
   return (
-    <Card className="p-8 shadow-xl border-2 border-emerald-100">
+    <Card className="p-8 shadow-xl border-2 border-blue-100">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Let's Get Started</h2>
         <p className="text-gray-600">Tell us a bit about yourself</p>
@@ -167,7 +167,7 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
         <Button
           type="submit"
           size="lg"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg font-semibold group"
+          className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold group"
         >
           Continue
           <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

@@ -13,47 +13,39 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         setError("")
 
-        // Simulate network delay
-        setTimeout(() => {
-            try {
-                const storedData = localStorage.getItem("onboardingData")
-                if (!storedData) {
-                    setError("No account found. Please Sign Up first.")
-                    setIsLoading(false)
-                    return
-                }
+        try {
+            const res = await fetch("/api/user/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone }),
+            })
 
-                const profile = JSON.parse(storedData)
-                // Simple check: user must enter the same phone number
-                // Remove spaces/dashes for comparison
-                const storedPhone = (profile.phone || "").replace(/\D/g, "")
-                const inputPhone = phone.replace(/\D/g, "")
+            const data = await res.json()
 
-                if (storedPhone && inputPhone === storedPhone) {
-                    localStorage.setItem("arthAstraSession", "true")
-                    window.location.href = "/dashboard"
-                } else {
-                    setError("Invalid phone number. Account not found.")
-                    setIsLoading(false)
-                }
-            } catch (err) {
-                setError("Error accessing account data.")
+            if (!res.ok) {
+                setError(data.error || "Login failed")
                 setIsLoading(false)
+                return
             }
-        }, 1000)
+
+            window.location.href = "/dashboard"
+        } catch (err) {
+            setError("Network error. Please try again.")
+            setIsLoading(false)
+        }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50 to-white px-4">
-            <Card className="w-full max-w-md p-8 shadow-2xl border-2 border-emerald-100">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4">
+            <Card className="w-full max-w-md p-8 shadow-2xl border-2 border-blue-100">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Lock className="w-8 h-8 text-emerald-600" />
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock className="w-8 h-8 text-blue-600" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
                     <p className="text-gray-500 mt-2">Enter your phone number to access your dashboard</p>
@@ -81,7 +73,7 @@ export default function LoginPage() {
 
                     <Button
                         type="submit"
-                        className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-base font-semibold"
+                        className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-base font-semibold"
                         disabled={isLoading}
                     >
                         {isLoading ? (
@@ -101,7 +93,7 @@ export default function LoginPage() {
                 <div className="mt-6 text-center">
                     <p className="text-sm text-gray-600">
                         Don't have an account?{" "}
-                        <Link href="/" className="text-emerald-600 font-semibold hover:underline">
+                        <Link href="/" className="text-blue-600 font-semibold hover:underline">
                             Sign Up via Onboarding
                         </Link>
                     </p>

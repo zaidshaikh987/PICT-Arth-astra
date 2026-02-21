@@ -1,8 +1,4 @@
-import { GoogleGenAI } from "@google/genai"
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-})
+import { generateWithRotation } from "@/lib/ai/gemini-client"
 
 export async function POST(req: Request) {
   try {
@@ -36,19 +32,11 @@ Return ONLY valid JSON in this exact format:
   "commonMistakes": ["string", "string"]
 }`
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 2000,
-      },
+    const text = await generateWithRotation("gemini-2.0-flash-exp", prompt, {
+      temperature: 0.7,
+      maxOutputTokens: 2000,
     })
 
-    const text = response.text
-    if (!text) {
-      throw new Error("Empty response from AI")
-    }
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error("Failed to parse JSON from response")
