@@ -1,120 +1,86 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { connectDB } from "@/lib/db"
 import { User } from "@/lib/models/user"
 import { Alert } from "@/lib/models/alert"
+import { sendWhatsAppMessage } from "@/lib/notifications"
 
-// POST /api/alerts/generate — Analyze user data and create alerts
 export async function POST() {
     try {
         await connectDB()
-        const cookieStore = await cookies()
-        const userId = cookieStore.get("userId")?.value
-        if (!userId) {
-            return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-        }
+        console.log("🚀 Running Alert Engine...")
 
-        const user = await User.findById(userId)
-        if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 })
-        }
+        const users = await User.find({})
+        let alertsCreated = 0
+        let whatsappSent = 0
 
-        const newAlerts: any[] = []
+        for (const user of users) {
+            // 1. Drop-off Detection (Inactive > 24h & Incomplete Onboarding)
+            const hoursSinceLastActive = (Date.now() - new Date(user.lastActiveAt).getTime()) / (1000 * 60 * 60)
 
-        // ─── 1. Credit Score Change Detection ───
-        const history = user.creditScoreHistory || []
-        if (history.length >= 2) {
-            const latest = history[history.length - 1]
-            const previous = history[history.length - 2]
-            const delta = latest.score - previous.score
-
-            // Only alert if we haven't already alerted for this specific change
-            const existingAlert = await Alert.findOne({
-                userId,
-                type: "credit_score_change",
-                "metadata.latestDate": latest.date,
-            })
-
-            if (!existingAlert && delta !== 0) {
-                const isPositive = delta > 0
-                newAlerts.push({
-                    userId,
-                    type: "credit_score_change",
-                    title: isPositive
-                        ? `Credit Score Improved by ${delta} points! 🎉`
-                        : `Credit Score Dropped by ${Math.abs(delta)} points ⚠️`,
-                    message: isPositive
-                        ? `Your score rose from ${previous.score} to ${latest.score}. Keep up the good financial habits!`
-                        : `Your score dropped from ${previous.score} to ${latest.score}. Consider reducing credit utilization and paying bills on time.`,
-                    severity: isPositive ? "info" : delta < -20 ? "critical" : "warning",
-                    metadata: { delta, from: previous.score, to: latest.score, latestDate: latest.date },
-                })
-            }
-        }
-
-        // ... existing imports ...
-        const { sendWhatsAppMessage } = await import("@/lib/notifications")
-
-        // ─── 2. Application Drop-off Detection ───
-        if (user.onboardingStep < 5) {
-            const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0
-            const hoursSinceActive = (Date.now() - lastActive) / (1000 * 60 * 60)
-
-            if (hoursSinceActive > 24) {
-                // Check if we already sent a drop-off alert in last 48 hours
-                const recentDropoff = await Alert.findOne({
-                    userId,
+            if (user.onboardingStep < 5 && hoursSinceLastActive > 24) {
+                // Check if we already sent a drop-off alert recently
+                const existingAlert = await Alert.findOne({
+                    userId: user._id,
                     type: "drop_off",
-                    createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+                    createdAt: { $gt: new Date(Date.now() - 48 * 60 * 60 * 1000) } // Within last 48h
                 })
 
-                if (!recentDropoff) {
-                    const stepNames = ["", "Basic Profile", "Employment Details", "Financial Info", "Loan Requirements", "Enhancements"]
-                    const stoppedAt = stepNames[user.onboardingStep] || `Step ${user.onboardingStep}`
+                if (!existingAlert) {
+                    const onboardingSteps = ["Profile", "Employment", "Financials", "Loan Goals", "Verification", "Complete"]
+                    const currentStepName = onboardingSteps[user.onboardingStep] || "Onboarding"
 
-                    const message = `You stopped at "${stoppedAt}". Complete your application now to get personalized loan offers up to ₹${((user.monthlyIncome || 30000) * 60).toLocaleString("en-IN")}!`
+                    const message = `Hi ${user.name || "there"}! You were so close to checking your loan eligibility. You stopped at the ${currentStepName} step. Come back and finish now: https://arth-astra.vercel.app/onboarding`
 
-                    newAlerts.push({
-                        userId,
-                        type: "drop_off",
-                        title: "Complete Your Application 📋",
-                        message,
-                        severity: "warning",
-                        metadata: { stoppedStep: user.onboardingStep, hoursSinceActive: Math.round(hoursSinceActive) },
-                    })
+                    await Promise.all([
+                        Alert.create({
+                            userId: user._id,
+                            type: "drop_off",
+                            title: "Continue your application 📝",
+                            message: `Resume your ${currentStepName} step to see your customized loan offers.`,
+                            severity: "info"
+                        }),
+                        sendWhatsAppMessage(user.phone, message)
+                    ])
+                    alertsCreated++
+                    whatsappSent++
+                }
+            }
 
-                    // 🚀 TRIGGER WHATSAPP: Re-engagement Nudge
-                    if (user.phone) {
-                        try {
-                            await sendWhatsAppMessage(user.phone, `Hi ${user.name || "there"}! We noticed you stopped your loan application at *${stoppedAt}*. 📋\n\nComplete it now to unlock offers up to ₹${((user.monthlyIncome || 30000) * 60).toLocaleString("en-IN")}!\n\n👉 Click here to resume: https://arthastra.vercel.app/onboarding`)
-                        } catch (e) {
-                            console.error("Failed to send drop-off WhatsApp", e)
+            // 2. EMI Reminders
+            if (user.emiSchedule && user.emiSchedule.length > 0) {
+                for (const emi of user.emiSchedule) {
+                    const daysToDue = (new Date(emi.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+
+                    if (!emi.paid && daysToDue > 0 && daysToDue <= 3) {
+                        const existingEMIAlert = await Alert.findOne({
+                            userId: user._id,
+                            type: "emi_reminder",
+                            message: { $regex: emi.loanName }
+                        })
+
+                        if (!existingEMIAlert) {
+                            await Alert.create({
+                                userId: user._id,
+                                type: "emi_reminder",
+                                title: "Upcoming EMI Due 💰",
+                                message: `Your EMI of ₹${emi.amount} for ${emi.loanName} is due on ${new Date(emi.dueDate).toLocaleDateString()}.`,
+                                severity: daysToDue <= 1 ? "critical" : "warning"
+                            })
+                            alertsCreated++
                         }
                     }
                 }
             }
         }
 
-        // ... (EMI Logic is fine without WhatsApp for now, or add if critical) ...
-
-        // Insert all new alerts
-        if (newAlerts.length > 0) {
-            await Alert.insertMany(newAlerts)
-
-            // Check for critical credit score drop in newAlerts and send WhatsApp
-            const criticalCreditAlert = newAlerts.find(a => a.type === "credit_score_change" && a.severity === "critical")
-            if (criticalCreditAlert && user.phone) {
-                try {
-                    await sendWhatsAppMessage(user.phone, `⚠️ Vital Alert: Your credit score dropped by ${Math.abs(criticalCreditAlert.metadata.delta)} points. Login to ArthAstra to view the detailed report immediately.`)
-                } catch (e) {
-                    console.error("Failed to send credit alert WhatsApp", e)
-                }
-            }
-        }
-
-        return NextResponse.json({ generated: newAlerts.length, alerts: newAlerts })
+        return NextResponse.json({
+            success: true,
+            alertsCreated,
+            whatsappSent,
+            timestamp: new Date().toISOString()
+        })
     } catch (error: any) {
-        console.error("[Alert Generate Error]", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error("Alert generation error:", error)
+        return NextResponse.json({ error: "Failed to generate alerts" }, { status: 500 })
     }
 }
