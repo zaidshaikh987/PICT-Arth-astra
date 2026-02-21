@@ -104,8 +104,30 @@ export default function HDFCApplyPage() {
             : 0
     const processingFee = Math.round(loanAmount * 0.015)
 
+    const refId = `HDFC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
+
+    async function notify(stage: string) {
+        try {
+            await fetch("/api/notify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    stage,
+                    userData: {
+                        name: u.name || "Customer",
+                        phone: u.phone,
+                        creditScore: u.creditScore,
+                        amount: loanAmount?.toLocaleString("en-IN"),
+                    },
+                }),
+            })
+        } catch { /* non-blocking */ }
+    }
+
     async function handleSubmit() {
         setSubmitting(true)
+
+        // Step 1: Mark as submitted + send WhatsApp
         await updateUser({
             selectedLoan: {
                 bankName: "HDFC Bank",
@@ -115,6 +137,7 @@ export default function HDFCApplyPage() {
                 tenure,
                 principal: loanAmount,
                 processingFee,
+                referenceId: refId,
             },
             timelineSimulation: {
                 ...(u.timelineSimulation || {}),
@@ -123,6 +146,22 @@ export default function HDFCApplyPage() {
                 approvalStatus: "pending",
             },
         })
+        await notify("application_submitted")
+
+        // Step 2: Simulate HDFC processing (4s), then auto-approve
+        await new Promise((res) => setTimeout(res, 4000))
+
+        await updateUser({
+            timelineSimulation: {
+                ...(u.timelineSimulation || {}),
+                appSubmitStatus: "completed",
+                appSubmittedAt: Date.now(),
+                approvalStatus: "approved",
+                approvedAt: Date.now(),
+            },
+        })
+        await notify("loan_approved")
+
         setSubmitting(false)
         setSubmitted(true)
     }
@@ -130,27 +169,69 @@ export default function HDFCApplyPage() {
     if (submitted) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EBF4FF] to-white px-4">
-                <div className="text-center max-w-md">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle2 className="w-10 h-10 text-green-600" />
+                <div className="text-center max-w-lg">
+                    {/* Big success tick */}
+                    <div className="relative w-24 h-24 mx-auto mb-6">
+                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle2 className="w-12 h-12 text-green-600" />
+                        </div>
+                        <span className="absolute -top-1 -right-1 text-2xl animate-bounce">🎊</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
-                    <p className="text-gray-600 mb-6">
-                        Your HDFC Bank Personal Loan application has been submitted. Reference ID:{" "}
-                        <strong className="text-[#004C8F]">HDFC-{Date.now().toString(36).toUpperCase()}</strong>
+
+                    <h2 className="text-3xl font-black text-gray-900 mb-2">Congratulations!</h2>
+                    <p className="text-gray-600 mb-1 text-lg font-semibold">Your Loan is <span className="text-green-600">APPROVED</span></p>
+                    <p className="text-sm text-gray-500 mb-6">
+                        Reference ID: <strong className="text-[#004C8F] font-mono">{refId}</strong>
                     </p>
-                    <p className="text-sm text-gray-500 mb-8">
-                        HDFC Bank will contact you within 2 business days on your registered mobile number.
-                    </p>
+
+                    {/* Stage ticks */}
+                    <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 text-left shadow-sm">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wide">Application Stages</p>
+                        {[
+                            { label: "Profile Setup", done: true },
+                            { label: "Documentation", done: true },
+                            { label: "Credit Check", done: true },
+                            { label: "Lender Matching", done: true },
+                            { label: "Application Submitted to HDFC Bank", done: true },
+                            { label: "Approval & Disbursal", done: true },
+                        ].map((s) => (
+                            <div key={s.label} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                <span className="text-sm font-semibold text-gray-800">{s.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* WhatsApp badge */}
+                    <div className="bg-[#25D366]/10 border border-[#25D366]/30 rounded-xl px-4 py-3 flex items-center gap-3 mb-6 text-left">
+                        <div className="w-9 h-9 bg-[#25D366] rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-sm font-bold">W</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-green-800">WhatsApp Notifications Sent</p>
+                            <p className="text-xs text-green-700">
+                                Approval confirmation sent to <strong>{u.phone || "your number"}</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Disbursal info */}
+                    <div className="bg-[#EBF4FF] rounded-xl px-5 py-4 mb-8">
+                        <p className="text-sm font-bold text-[#004C8F] mb-1">Loan Amount: {fmt(loanAmount)}</p>
+                        <p className="text-xs text-gray-600">Disbursal to your bank account in 1–2 business days.</p>
+                        <p className="text-xs text-gray-600">EMI of <strong>{fmt(emi)}/month</strong> begins from next billing cycle.</p>
+                    </div>
+
                     <Link href="/dashboard/timeline">
-                        <button className="bg-[#004C8F] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#00396E] transition-colors">
-                            Track Application Status →
+                        <button className="w-full bg-[#004C8F] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#00396E] transition-colors">
+                            View Application Timeline →
                         </button>
                     </Link>
                 </div>
             </div>
         )
     }
+
 
     return (
         <div className="min-h-screen bg-[#F0F6FF]">
@@ -360,8 +441,8 @@ export default function HDFCApplyPage() {
                                 <div
                                     key={t}
                                     className={`border-2 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-all ${cap(u.loanPurpose) === t
-                                            ? "border-[#004C8F] bg-[#EBF4FF] text-[#004C8F]"
-                                            : "border-gray-200 text-gray-500"
+                                        ? "border-[#004C8F] bg-[#EBF4FF] text-[#004C8F]"
+                                        : "border-gray-200 text-gray-500"
                                         }`}
                                 >
                                     {t === cap(u.loanPurpose) && <span className="mr-1">✓</span>}

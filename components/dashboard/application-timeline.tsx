@@ -4,10 +4,13 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, FileCheck, TrendingUp, Award, Upload } from "lucide-react"
+import { useUser } from "@/lib/user-context"
+import { computeStageCompletion } from "@/lib/app-stages"
 
 export default function ApplicationTimeline() {
   const [timeline, setTimeline] = useState<any[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
+  const { user } = useUser()
 
   useEffect(() => {
     const files = localStorage.getItem("uploadedFiles")
@@ -27,57 +30,70 @@ export default function ApplicationTimeline() {
       const completedDocs = docActions.filter((a) => a.status === "completed").length
       const docProgress = completedDocs / requiredDocs.length
 
+      const stageMap = computeStageCompletion(user)
+      const appDone = stageMap.application
+      const approvedDone = stageMap.approval
+
       setTimeline([
         {
           stage: "Profile Setup",
-          status: "completed",
-          date: "Completed",
+          status: stageMap.profile ? "completed" : "pending",
+          date: stageMap.profile ? "Completed" : "Pending",
           description: "Basic information and loan requirements submitted",
           actions: [],
         },
         {
           stage: "Document Upload",
-          status: docProgress === 1 ? "completed" : docProgress > 0 ? "in-progress" : "pending",
-          date: docProgress === 1 ? "Completed" : "In Progress",
+          status: stageMap.documentation ? "completed" : docProgress > 0 ? "in-progress" : "pending",
+          date: stageMap.documentation ? "Completed" : docProgress > 0 ? "In Progress" : "Pending",
           description: "Upload required documents for verification",
           actions: docActions,
         },
         {
           stage: "Credit Check",
-          status: docProgress === 1 ? "in-progress" : "pending",
-          date: docProgress === 1 ? "In Progress" : "Pending",
-          description: "Soft credit check will be performed",
+          status: stageMap.credit_check ? "completed" : stageMap.documentation ? "in-progress" : "pending",
+          date: stageMap.credit_check ? "Completed" : stageMap.documentation ? "In Progress" : "Pending",
+          description: "Soft credit check performed using your CIBIL score",
           actions: [],
         },
         {
           stage: "Lender Matching",
-          status: "pending",
-          date: "Pending",
-          description: "Finding best loan offers based on your profile",
+          status: stageMap.lender_matching ? "completed" : stageMap.credit_check ? "in-progress" : "pending",
+          date: stageMap.lender_matching ? "Completed" : stageMap.credit_check ? "In Progress" : "Pending",
+          description: "AI matched you with the best loan offers for your profile",
           actions: [],
+          cta: !stageMap.lender_matching ? { label: "View Loan Offers", href: "/dashboard/loans" } : undefined,
         },
         {
           stage: "Application Submission",
-          status: "pending",
-          date: "Pending",
-          description: "Submit applications to selected lenders",
+          status: appDone ? "completed" : stageMap.lender_matching ? "in-progress" : "pending",
+          date: appDone ? "Submitted" : stageMap.lender_matching ? "Ready to Apply" : "Pending",
+          description: appDone
+            ? `Submitted to HDFC Bank · Ref: ${user?.selectedLoan?.referenceId || "—"}`
+            : "Submit your application to the selected lender",
           actions: [],
+          cta: !appDone && stageMap.lender_matching ? { label: "Apply Now", href: "/dashboard/apply/hdfc" } : undefined,
         },
         {
           stage: "Approval & Disbursal",
-          status: "pending",
-          date: "Pending",
-          description: "Final approval and loan amount transfer",
+          status: approvedDone ? "completed" : appDone ? "in-progress" : "pending",
+          date: approvedDone ? "Approved ✓" : appDone ? "Under Review" : "Pending",
+          description: approvedDone
+            ? "Loan approved! Disbursal in 1–2 business days."
+            : "Awaiting final approval from HDFC Bank",
           actions: [],
         },
       ])
     } else {
-      // Default timeline if no files
+      // Default timeline if no files — still use user context for stage logic
+      const stageMap = computeStageCompletion(user)
+      const appDone = stageMap.application
+      const approvedDone = stageMap.approval
       setTimeline([
         {
           stage: "Profile Setup",
-          status: "completed",
-          date: "Completed",
+          status: stageMap.profile ? "completed" : "pending",
+          date: stageMap.profile ? "Completed" : "Pending",
           description: "Basic information and loan requirements submitted",
           actions: [],
         },
@@ -92,6 +108,7 @@ export default function ApplicationTimeline() {
             { name: "Address Proof", status: "pending" },
             { name: "Bank Statements", status: "pending" },
           ],
+          cta: { label: "Upload Documents", href: "/dashboard/documents" },
         },
         {
           stage: "Credit Check",
@@ -99,31 +116,38 @@ export default function ApplicationTimeline() {
           date: "Pending",
           description: "Soft credit check will be performed",
           actions: [],
+          cta: { label: "Check Eligibility", href: "/dashboard/eligibility" },
         },
         {
           stage: "Lender Matching",
-          status: "pending",
-          date: "Pending",
+          status: stageMap.lender_matching ? "completed" : "pending",
+          date: stageMap.lender_matching ? "Completed" : "Pending",
           description: "Finding best loan offers based on your profile",
           actions: [],
+          cta: !stageMap.lender_matching ? { label: "View Loan Offers", href: "/dashboard/loans" } : undefined,
         },
         {
           stage: "Application Submission",
-          status: "pending",
-          date: "Pending",
-          description: "Submit applications to selected lenders",
+          status: appDone ? "completed" : stageMap.lender_matching ? "in-progress" : "pending",
+          date: appDone ? "Submitted" : stageMap.lender_matching ? "Ready to Apply" : "Pending",
+          description: appDone
+            ? `Submitted to HDFC Bank · Ref: ${user?.selectedLoan?.referenceId || "—"}`
+            : "Submit your application to the selected lender",
           actions: [],
+          cta: !appDone && stageMap.lender_matching ? { label: "Apply Now", href: "/dashboard/apply/hdfc" } : undefined,
         },
         {
           stage: "Approval & Disbursal",
-          status: "pending",
-          date: "Pending",
-          description: "Final approval and loan amount transfer",
+          status: approvedDone ? "completed" : appDone ? "in-progress" : "pending",
+          date: approvedDone ? "Approved ✓" : appDone ? "Under Review" : "Pending",
+          description: approvedDone
+            ? "Loan approved! Disbursal in 1–2 business days."
+            : "Awaiting final approval from HDFC Bank",
           actions: [],
         },
       ])
     }
-  }, [])
+  }, [user])
 
   const completedStages = timeline.filter((t) => t.status === "completed").length
   const progress = timeline.length > 0 ? (completedStages / timeline.length) * 100 : 0
@@ -237,8 +261,22 @@ export default function ApplicationTimeline() {
                   </div>
                 )}
 
-                {item.status === "in-progress" && item.actions.length === 0 && (
-                  <Button className="bg-emerald-600 hover:bg-emerald-700">Continue</Button>
+                {item.status === "in-progress" && item.actions.length === 0 && item.cta && (
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 mt-1"
+                    onClick={() => window.location.href = item.cta!.href}
+                  >
+                    {item.cta.label} →
+                  </Button>
+                )}
+                {item.status === "pending" && item.cta && (
+                  <Button
+                    variant="outline"
+                    className="mt-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => window.location.href = item.cta!.href}
+                  >
+                    {item.cta.label} →
+                  </Button>
                 )}
               </div>
             </div>
