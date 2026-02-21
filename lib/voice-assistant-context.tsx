@@ -167,7 +167,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const recognitionRef = useRef<any>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const useGeminiRef = useRef(false) // Default to Web Speech API for reliability (Gemini requires Key)
+  const useGeminiRef = useRef(true) // Set to true for higher accuracy (uses /api/voice-transcribe)
   const synthRef = useRef<SpeechSynthesis | null>(null)
   const onFieldUpdateRef = useRef<((fieldId: string, value: any) => void) | null>(null)
   const onStepChangeRef = useRef<((direction: "next" | "back") => void) | null>(null)
@@ -268,7 +268,11 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       return
     }
 
-    // Use Gemini-based transcription with MediaRecorder
+    setIsListening(true)
+    setTranscript("")
+    isRecognitionActiveRef.current = true
+
+    // 1. Start Gemini Recorder (for Accuracy)
     if (useGeminiRef.current && typeof navigator !== "undefined" && navigator.mediaDevices) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -289,24 +293,19 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         }
 
         mediaRecorder.start()
-        isRecognitionActiveRef.current = true
-        setIsListening(true)
-        setTranscript("")
 
-        // Auto-stop after 5 seconds
+        // Auto-stop after 10 seconds (gives user enough time to speak)
         setTimeout(() => {
           if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop()
           }
-        }, 5000)
-
-        return
+        }, 10000)
       } catch (error) {
-        console.log("[Gemini] MediaRecorder not available, falling back to Web Speech API")
+        console.log("[Gemini] MediaRecorder error:", error)
       }
     }
 
-    // Fallback to Web Speech API
+    // 2. Start Web Speech API (for Continuous Life Feedback)
     if (!recognitionRef.current) return
 
     try {
@@ -314,18 +313,13 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
     } catch (e) { }
 
     setTimeout(() => {
-      if (!recognitionRef.current || isRecognitionActiveRef.current) return
-
+      if (!recognitionRef.current) return
       try {
         recognitionRef.current.start()
-        isRecognitionActiveRef.current = true
-        setIsListening(true)
-        setTranscript("")
       } catch (e: any) {
         if (!e.message?.includes("already started")) {
           console.log("[v0] Recognition start error:", e.message)
         }
-        isRecognitionActiveRef.current = false
       }
     }, 150)
   }, [transcribeWithGemini])
@@ -572,66 +566,48 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         const isValid = true
 
         if (currentField.type === "number" || currentField.type === "slider") {
-          let numValue = 0
+          // Enhanced Number Extraction Logic
+          let caughtDigits = input.match(/\d+/) ? Number.parseInt(input.match(/\d+/)![0]) : 0
 
+          // Word-to-Number Parsing (handles "twenty seven", etc.)
+          const units: Record<string, number> = {
+            zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+            eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+            एक: 1, दो: 2, तीन: 3, चार: 4, पांच: 5, छह: 6, सात: 7, आठ: 8, नौ: 9, दस: 10
+          }
+          const tens: Record<string, number> = {
+            twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+            बीस: 20, तीस: 30, चालीस: 40, पचास: 50
+          }
+
+          let wordVal = 0
+          const words = lowerInput.split(/\s+/)
+          for (let i = 0; i < words.length; i++) {
+            const word = words[i]
+            const nextWord = words[i + 1]
+
+            if (tens[word]) {
+              wordVal += tens[word]
+              if (nextWord && units[nextWord]) {
+                wordVal += units[nextWord]
+                i++ // skip next
+              }
+            } else if (units[word]) {
+              wordVal += units[word]
+            }
+          }
+
+          // Pick the best match
+          let numValue = wordVal > 0 ? wordVal : caughtDigits
+
+          // Multipliers (Lakh, Crore, etc.) - apply to whatever we found
           const croreMatch = lowerInput.match(/(\d+\.?\d*)\s*(crore|cr|करोड़)/i)
           const lakhMatch = lowerInput.match(/(\d+\.?\d*)\s*(lakh|lac|लाख|l)/i)
           const thousandMatch = lowerInput.match(/(\d+\.?\d*)\s*(thousand|हजार|k|th)/i)
-          const hundredMatch = lowerInput.match(/(\d+\.?\d*)\s*(hundred|सौ)/i)
-          const directMatch = input.match(/[\d,]+\.?\d*/)
 
-          const wordNumbers: Record<string, number> = {
-            one: 1,
-            two: 2,
-            three: 3,
-            four: 4,
-            five: 5,
-            six: 6,
-            seven: 7,
-            eight: 8,
-            nine: 9,
-            ten: 10,
-            fifteen: 15,
-            twenty: 20,
-            "twenty five": 25,
-            thirty: 30,
-            forty: 40,
-            fifty: 50,
-            sixty: 60,
-            seventy: 70,
-            eighty: 80,
-            ninety: 90,
-            hundred: 100,
-            एक: 1,
-            दो: 2,
-            तीन: 3,
-            चार: 4,
-            पांच: 5,
-            दस: 10,
-            बीस: 20,
-            पचास: 50,
-          }
-
-          for (const [word, num] of Object.entries(wordNumbers)) {
-            if (lowerInput.includes(word)) {
-              numValue = num
-              break
-            }
-          }
-
-          if (numValue === 0) {
-            if (croreMatch) {
-              numValue = Number.parseFloat(croreMatch[1]) * 10000000
-            } else if (lakhMatch) {
-              numValue = Number.parseFloat(lakhMatch[1]) * 100000
-            } else if (thousandMatch) {
-              numValue = Number.parseFloat(thousandMatch[1]) * 1000
-            } else if (hundredMatch) {
-              numValue = Number.parseFloat(hundredMatch[1]) * 100
-            } else if (directMatch) {
-              numValue = Number.parseFloat(directMatch[0].replace(/,/g, ""))
-            }
-          }
+          if (croreMatch) numValue = Number.parseFloat(croreMatch[1]) * 10000000
+          else if (lakhMatch) numValue = Number.parseFloat(lakhMatch[1]) * 100000
+          else if (thousandMatch) numValue = Number.parseFloat(thousandMatch[1]) * 1000
 
           if (numValue > 0) {
             processedValue = Math.round(numValue)
@@ -639,10 +615,9 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
           } else {
             const hintMsg =
               language === "en"
-                ? `I heard "${input}". Please say a number like "50 thousand" or "5 lakh". Or say "skip" to move on.`
-                : `मैंने "${input}" सुना। कृपया एक संख्या बोलें जैसे "50 हजार" या "5 लाख"। या "छोड़ो" बोलें।`
+                ? `I caught "${input}". Please say your age clearly, like "twenty five" or "25".`
+                : `मैंने "${input}" सुना। कृपया अपनी उम्र स्पष्ट रूप से कहें, जैसे "पच्चीस" या "25"।`
             addChatMessage({ role: "assistant", content: hintMsg, type: "info" })
-            // Re-enable auto-listen so user can retry this field
             shouldAutoListenRef.current = true
             await speak(hintMsg)
             return
@@ -781,8 +756,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
 
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition()
-      recognition.continuous = false
-      recognition.interimResults = false
+      recognition.continuous = true
+      recognition.interimResults = true
       recognition.lang = language === "hi" ? "hi-IN" : "en-IN"
       recognition.maxAlternatives = 1
 
@@ -814,10 +789,26 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
       }
 
       recognition.onresult = (event: any) => {
-        const result = event.results[0][0].transcript
-        setTranscript(result)
-        if (processVoiceInputRef.current) {
-          processVoiceInputRef.current(result)
+        let interimTranscript = ""
+        let finalTranscript = ""
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript
+          } else {
+            interimTranscript += event.results[i][0].transcript
+          }
+        }
+
+        const currentTranscript = finalTranscript || interimTranscript
+        if (currentTranscript) {
+          setTranscript(currentTranscript)
+
+          // Only process IF Gemini is NOT enabled (Gemini handles its own final processing)
+          // OR if it's a final result and Gemini is taking too long
+          if (!useGeminiRef.current && finalTranscript && processVoiceInputRef.current) {
+            processVoiceInputRef.current(finalTranscript)
+          }
         }
       }
 

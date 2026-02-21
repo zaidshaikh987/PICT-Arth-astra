@@ -1,6 +1,5 @@
 export const translations = {
   en: {
-    // Navigation - Updated "overview" to "dashboard"
     dashboard: "Dashboard",
     eligibilityReport: "Eligibility Report",
     creditPathOptimizer: "Credit Path Optimizer",
@@ -14,8 +13,6 @@ export const translations = {
     notifications: "Notifications",
     settings: "Settings",
     logout: "Logout",
-
-    // Common
     applyNow: "Apply Now",
     viewDetails: "View Details",
     compareLoans: "Compare Loans",
@@ -25,16 +22,12 @@ export const translations = {
     cancel: "Cancel",
     next: "Next",
     previous: "Previous",
-
-    // Dashboard
     welcomeBack: "Welcome back",
     loanReadinessOverview: "Here's your loan readiness overview",
     creditReadiness: "Credit Readiness",
     eligibility: "Eligibility",
     nextStep: "Next Step",
     quickActions: "Quick Actions",
-
-    // Loan Comparison
     loanComparisonTitle: "Loan Comparison",
     loanComparisonSubtitle: "Compare personalized loan offers from top lenders",
     allOffers: "All Offers",
@@ -54,30 +47,21 @@ export const translations = {
     tenure: "tenure",
     days: "days",
     withInterest: "with interest",
-
-    // AI Assistant
     needHelp: "Need help choosing?",
     aiHelperText: "Our assistant can help you compare offers and recommend the best option for your situation.",
     talkToAssistant: "Talk to Assistant",
-
-    // Hero Section
     heroTitle: "Borrow Smarter, Not Harder",
     heroSubtitle: "Intelligent loan guidance designed for every Indian borrower",
     getStarted: "Get Started Free",
     howItWorks: "How It Works",
-
-    // Voice Support
     voiceEnabled: "Voice enabled",
     speakNow: "Speak now...",
     voiceNotSupported: "Voice not supported",
-
-    // Chatbot
     chatbotGreeting: "Hi! I'm ArthAstra Assistant. How can I help you today?",
     typeMessage: "Type a message...",
     askAnything: "Ask me anything about loans",
   },
   hi: {
-    // Navigation - Updated "overview" to "dashboard"
     dashboard: "डैशबोर्ड",
     eligibilityReport: "पात्रता रिपोर्ट",
     creditPathOptimizer: "क्रेडिट पथ ऑप्टिमाइज़र",
@@ -91,8 +75,6 @@ export const translations = {
     notifications: "सूचनाएं",
     settings: "सेटिंग्स",
     logout: "लॉगआउट",
-
-    // Common
     applyNow: "अभी आवेदन करें",
     viewDetails: "विवरण देखें",
     compareLoans: "ऋण तुलना करें",
@@ -102,16 +84,12 @@ export const translations = {
     cancel: "रद्द करें",
     next: "अगला",
     previous: "पिछला",
-
-    // Dashboard
     welcomeBack: "वापसी पर स्वागत है",
     loanReadinessOverview: "यहां आपकी ऋण तैयारी का अवलोकन है",
     creditReadiness: "क्रेडिट तैयारी",
     eligibility: "पात्रता",
     nextStep: "अगला कदम",
     quickActions: "त्वरित क्रियाएं",
-
-    // Loan Comparison
     loanComparisonTitle: "ऋण तुलना",
     loanComparisonSubtitle: "शीर्ष ऋणदाताओं से वैयक्तिकृत ऋण प्रस्तावों की तुलना करें",
     allOffers: "सभी प्रस्ताव",
@@ -131,27 +109,81 @@ export const translations = {
     tenure: "अवधि",
     days: "दिन",
     withInterest: "ब्याज के साथ",
-
-    // AI Assistant
     needHelp: "चयन में सहायता चाहिए?",
     aiHelperText: "हमारा सहायक आपकी स्थिति के लिए प्रस्तावों की तुलना करने और सर्वोत्तम विकल्प सुझाने में मदद कर सकता है।",
     talkToAssistant: "सहायक से बात करें",
-
-    // Hero Section
     heroTitle: "समझदारी से उधार लें, मुश्किल से नहीं",
     heroSubtitle: "हर भारतीय उधारकर्ता के लिए बुद्धिमान ऋण मार्गदर्शन",
     getStarted: "मुफ्त शुरू करें",
     howItWorks: "यह कैसे काम करता है",
-
-    // Voice Support
     voiceEnabled: "वॉयस सक्षम",
     speakNow: "अभी बोलें...",
     voiceNotSupported: "वॉयस समर्थित नहीं",
-
-    // Chatbot
     chatbotGreeting: "नमस्ते! मैं आर्थास्त्र सहायक हूं। आज मैं आपकी कैसे मदद कर सकता हूं?",
     typeMessage: "संदेश लिखें...",
     askAnything: "ऋण के बारे में कुछ भी पूछें",
+  },
+  mr: {
+    dashboard: "डॅशबोर्ड",
+    eligibilityReport: "पात्रता अहवाल",
+    creditPathOptimizer: "क्रेडिट पथ ऑप्टिमायझर",
+    loanComparison: "कर्ज तुलना",
+    applicationTimeline: "अर्ज टाइमलाइन",
+    peerInsights: "मित्र अंतर्दृष्टी",
+    rejectionRecovery: "नकार रिकव्हरी",
+    documentChecklist: "दस्तऐवज चेकलिस्ट",
+    multiGoalPlanner: "बहु-ध्येय नियोजक",
+    documents: "दस्तऐवज",
+    notifications: "सूचना",
+    settings: "सेटिंग्ज",
+    logout: "लॉगआउट",
+    applyNow: "आता अर्ज करा",
+    viewDetails: "तपशील पहा",
+    compareLoans: "कर्जाची तुलना करा",
+    bestMatch: "सर्वोत्तम जुळणी",
+    loading: "लोड होत आहे...",
+    save: "जतन करा",
+    cancel: "रद्द करा",
+    next: "पुढील",
+    previous: "मागील",
+    welcomeBack: "परत स्वागत आहे",
+    loanReadinessOverview: "येथे तुमच्या कर्ज तयारीचे विहंगावलोकन आहे",
+    creditReadiness: "क्रेडिट तयारी",
+    eligibility: "पात्रता",
+    nextStep: "पुढील पाऊल",
+    quickActions: "त्वरीत क्रिया",
+    loanComparisonTitle: "कर्ज तुलना",
+    loanComparisonSubtitle: "प्रमुख कर्जदारांकडून वैयक्तिकृत कर्ज ऑफरची तुलना करा",
+    allOffers: "सर्व ऑफर",
+    recommended: "शिफारस केलेले",
+    premium: "प्रीमियम",
+    budget: "बजेट",
+    lowestInterestRate: "सर्वात कमी व्याज दर",
+    lowestEMI: "सर्वात कमी ईएमआय",
+    highestApproval: "सर्वात जास्त मान्यता शक्यता",
+    interestRate: "व्याज दर",
+    monthlyEMI: "मासिक ईएमआय",
+    processing: "प्रक्रिया",
+    totalCost: "एकूण खर्च",
+    approvalOdds: "मान्यता शक्यता",
+    noCreditImpact: "क्रेडिट स्कोअरवर कोणताही परिणाम नाही",
+    vsMarketAvg: "बाजार सरासरीच्या तुलनेत",
+    tenure: "कालावधी",
+    days: "दिवस",
+    withInterest: "व्याजासह",
+    needHelp: "निवडण्यात मदत हवी आहे?",
+    aiHelperText: "आमचा सहाय्यक तुम्हाला ऑफरची तुलना करण्यात आणि तुमच्या परिस्थितीसाठी सर्वोत्तम पर्यायाची शिफारस करण्यात मदत करू शकतो.",
+    talkToAssistant: "सहाय्यकाशी बोला",
+    heroTitle: "हुशारीने कर्ज घ्या, कष्टाने नाही",
+    heroSubtitle: "प्रत्येक भारतीय कर्जदारासाठी बुद्धिमान कर्ज मार्गदर्शन",
+    getStarted: "विनामूल्य सुरू करा",
+    howItWorks: "हे कसे कार्य करते",
+    voiceEnabled: "व्हॉइस सक्षम",
+    speakNow: "आता बोला...",
+    voiceNotSupported: "व्हॉइस समर्थित नाही",
+    chatbotGreeting: "नमस्कार! मी आर्थास्त्र सहाय्यक आहे. आज मी तुम्हाला कशी मदत करू शकतो?",
+    typeMessage: "संदेश टाइप करा...",
+    askAnything: "कर्जाबद्दल काहीही विचारा",
   },
 }
 

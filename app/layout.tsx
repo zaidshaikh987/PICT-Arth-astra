@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { LanguageProvider } from "@/lib/language-context"
 import { VoiceAssistantProvider } from "@/lib/voice-assistant-context"
 import VoiceAssistantButton from "@/components/voice-assistant-button"
-
+import { UserProvider } from "@/lib/user-context"
 import GlobalChatbot from "@/components/global-chatbot"
 
 
@@ -38,13 +38,15 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
         <LanguageProvider>
-          <VoiceAssistantProvider>
-            {children}
-            <VoiceAssistantButton />
-            <GlobalChatbot />
-            <Toaster />
-            <Analytics />
-          </VoiceAssistantProvider>
+          <UserProvider>
+            <VoiceAssistantProvider>
+              {children}
+              <VoiceAssistantButton />
+              <GlobalChatbot />
+              <Toaster />
+              <Analytics />
+            </VoiceAssistantProvider>
+          </UserProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -1,24 +1,20 @@
-import { GoogleGenAI } from "@google/genai"
+import { getGeminiClient } from "@/lib/ai/gemini-client"
 import { OrchestratorAgent } from "@/lib/agents/core/orchestrator"
 
-export const maxDuration = 30
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-})
+export const maxDuration = 60
 
 const AGENT_PERSONAS = {
-  ONBOARDING: `You are the Onboarding Assistant. Your goal is to welcome the user and help them complete their profile. Be warm, encouraging, and ask one question at a time.`,
+  ONBOARDING: `You are the Onboarding Assistant for ArthAstra. Welcome the user and help them complete their financial profile. Be warm, encouraging, and ask one question at a time.`,
 
-  LOAN_OFFICER: `You are the Senior Loan Officer & Eligibility Analyst. You specialize in analyzing loan eligibility, bank policies, interest rates, and calculating EMIs.`,
+  LOAN_OFFICER: `You are the Senior Loan Officer & Eligibility Analyst at ArthAstra. You specialize in analyzing loan eligibility, bank policies, interest rates, RBI guidelines, and calculating EMIs. Always use Indian context (₹, Lakhs, Crores, CIBIL score).`,
 
-  RECOVERY: `You are the Credit Rehabilitation Specialist. 
+  RECOVERY: `You are the Credit Rehabilitation Specialist at ArthAstra.
   1. Start by identifying yourself.
-  2. If the user's Credit Score is known (from analysis), acknowledge it (e.g., "I see your score is 810").
-  3. If you don't know the specific rejection reason (e.g. "Low DTI", "Policy"), ask for it to tailor the plan.
-  4. Be empathetic but very proactive.`,
+  2. If the user's Credit Score is known (from analysis), acknowledge it (e.g., "I see your score is 680").
+  3. If you don't know the specific rejection reason, ask for it to tailor the plan.
+  4. Be empathetic but very proactive with actionable advice.`,
 
-  GENERAL: `You are ArthAstra, a helpful financial guide. Answer general queries politely.`
+  GENERAL: `You are ArthAstra, an intelligent financial guide for Indian borrowers. Answer questions about loans, CIBIL scores, EMI, eligibility, and financial planning. Be concise and helpful.`
 }
 
 export async function POST(req: Request) {
@@ -34,7 +30,7 @@ export async function POST(req: Request) {
     const selectedAgent = routingResult.data?.selectedAgent || "GENERAL"
     const specificPersona = AGENT_PERSONAS[selectedAgent as keyof typeof AGENT_PERSONAS] || AGENT_PERSONAS.GENERAL
 
-    console.log(`[Chat] Routed to: ${selectedAgent}`)
+    console.log(`[Chat] 🤖 Routed to: ${selectedAgent} | Gemini 2.5 Flash`)
 
     // 2. Execute Specialist Agent if applicable
     let agentContext = ""
@@ -47,7 +43,6 @@ export async function POST(req: Request) {
         agentContext = `REAL-TIME AGENT ANALYSIS:\n${JSON.stringify(result.data)}\nUse this data to answer accurately.`
       }
     } else if (selectedAgent === "RECOVERY") {
-    } else if (selectedAgent === "RECOVERY") {
       const { RecoveryAgent } = await import("@/lib/agents/specialists/recovery-agent")
       const agent = new RecoveryAgent()
       const result = await agent.generateRecoveryPlan(context || {})
@@ -56,21 +51,21 @@ export async function POST(req: Request) {
       }
     }
 
-    // RAG: Semantic search for relevant knowledge
-    let ragContext = "";
+    // 3. RAG: Semantic search for relevant knowledge
+    let ragContext = ""
     try {
-      const { vectorStore } = await import("@/lib/ai/vector-store");
-      const relevantKnowledge = await vectorStore.getContext(lastMessage.content);
+      const { vectorStore } = await import("@/lib/ai/vector-store")
+      const relevantKnowledge = await vectorStore.getContext(lastMessage.content)
       if (relevantKnowledge) {
-        ragContext = `\nKNOWLEDGE BASE (Use this to answer questions about ArthAstra features):\n${relevantKnowledge}`;
+        ragContext = `\nKNOWLEDGE BASE (Use this to answer questions about ArthAstra features):\n${relevantKnowledge}`
       }
     } catch (error) {
-      console.log("RAG not available:", error);
+      console.log("[Chat] RAG not available:", error)
     }
 
     const systemPrompt = `${specificPersona}
     
-    LANGUAGE PREFERENCE: ${language === "hi" ? "Respond in Hindi (Devanagari script)." : "Respond in English."}
+    LANGUAGE PREFERENCE: ${language === "hi" ? "Respond in Hindi (Devanagari script). Use simple, clear Hindi." : "Respond in English."}
 
     CONTEXT AWARENESS:
     ${context ? `User Profile: ${JSON.stringify(context)}` : "No user profile available yet."}
@@ -81,10 +76,12 @@ export async function POST(req: Request) {
     
     RESPONSE GUIDELINES:
     1. Stay in character as the "${selectedAgent}" agent.
-    2. Keep responses concise (max 3 paragraphs).
-    3. Use Indian financial context (₹, Lakhs, Crores).
-    4. If AGENT ANALYSIS is provided, YOU MUST USE IT. Do not ask for data provided in the analysis.
-    5. If KNOWLEDGE BASE info is provided, use it to give accurate answers about ArthAstra features.
+    2. BE VERY BRIEF — max 2 short sentences OR max 4 bullet points. Never write paragraphs.
+    3. Use Indian financial context (₹, Lakhs, Crores, CIBIL, RBI).
+    4. If AGENT ANALYSIS is provided, use it directly. Do NOT ask for data already in the analysis.
+    5. If KNOWLEDGE BASE info is provided, use it accurately.
+    6. No greetings or preamble — get straight to the answer.
+    7. Use bold for key numbers or terms. Use bullets for lists.
     `
 
     const conversationHistory = messages.slice(0, -1).map((msg: any) => ({
@@ -92,7 +89,9 @@ export async function POST(req: Request) {
       parts: [{ text: msg.content }],
     }))
 
-    const response = await ai.models.generateContent({
+    // Use shared Gemini client with key rotation support
+    const gemini = getGeminiClient()
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         { role: "user", parts: [{ text: systemPrompt }] },
@@ -102,18 +101,24 @@ export async function POST(req: Request) {
     })
 
     const text = response.text
+    console.log(`[Chat] ✅ Gemini response received (${text?.length || 0} chars)`)
 
     return new Response(JSON.stringify({ response: text, agent: selectedAgent }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     })
   } catch (error: any) {
-    console.error("Chat API error:", error)
+    console.error("[Chat] ❌ Gemini API error:", error)
+
+    // Check for quota error
+    const isQuota = error?.message?.includes("429") || error?.message?.includes("quota")
+    const errMsg = isQuota
+      ? "Gemini API quota exceeded. Please wait a moment and try again."
+      : error?.message || "Failed to get response from Gemini. Please try again."
+
     return new Response(
-      JSON.stringify({
-        error: error?.message || "Failed to get response. Please try again.",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: errMsg }),
+      { status: isQuota ? 429 : 500, headers: { "Content-Type": "application/json" } },
     )
   }
 }

@@ -1,114 +1,75 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-
-interface UserData {
-    _id?: string
-    name?: string
-    age?: number
-    phone?: string
-    city?: string
-    state?: string
-    language?: string
-    employmentType?: string
-    monthlyIncome?: number
-    employmentTenure?: string
-    companyName?: string
-    existingEMI?: number
-    monthlyExpenses?: number
-    savingsRange?: string
-    hasCreditHistory?: boolean
-    creditScore?: number
-    loanPurpose?: string
-    loanAmount?: number
-    preferredEMI?: number
-    tenure?: number
-    isJointApplication?: boolean
-    coborrowerIncome?: number
-    coborrowerRelationship?: string
-    onboardingStep?: number
-    uploadedFiles?: any[]
-    timelineSimulation?: Record<string, any>
-    loanGoals?: any[]
-    selectedLoan?: Record<string, any> | null
-    sessionTs?: number
-    createdAt?: string
-    updatedAt?: string
-    savedScenarios?: any[]
-    creditReadinessScore?: number
-    applicationStatus?: "pending" | "approved" | "rejected" | "more_info"
-    xp?: number
-    badges?: string[]
-}
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface UserContextType {
-    user: UserData | null
-    loading: boolean
-    error: string | null
-    refreshUser: () => Promise<void>
-    updateUser: (updates: Partial<UserData>) => Promise<void>
+    user: any;
+    setUser: (user: any) => void;
+    loading: boolean;
+    refreshUser: () => Promise<void>;
+    updateUser: (userData: any) => Promise<any>;
 }
 
-const UserContext = createContext<UserContextType>({
-    user: null,
-    loading: true,
-    error: null,
-    refreshUser: async () => { },
-    updateUser: async () => { },
-})
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export function UserProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<UserData | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+export function UserProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const refreshUser = useCallback(async () => {
+    const fetchUser = async () => {
         try {
-            setLoading(true)
-            const res = await fetch("/api/user/me")
-            if (res.status === 401) {
-                setUser(null)
-                setError(null)
-                return
+            setLoading(true);
+            const res = await fetch("/api/user/me");
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data);
+            } else {
+                setUser(null);
             }
-            if (!res.ok) throw new Error("Failed to fetch user")
-            const data = await res.json()
-            setUser(data.user)
-            setError(null)
-        } catch (e: any) {
-            setError(e.message)
+        } catch (error) {
+            console.error("Failed to fetch user:", error);
+            setUser(null);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [])
+    };
 
-    const updateUser = useCallback(async (updates: Partial<UserData>) => {
+    const updateUser = async (userData: any) => {
         try {
             const res = await fetch("/api/user/update", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updates),
-            })
-            if (!res.ok) throw new Error("Update failed")
-            const data = await res.json()
-            setUser(data.user)
-        } catch (e: any) {
-            console.error("Update error:", e)
-            throw e
+                body: JSON.stringify(userData),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setUser(data.user);
+                    return data.user;
+                }
+            }
+            throw new Error("Update failed");
+        } catch (error) {
+            console.error("Failed to update user:", error);
+            throw error;
         }
-    }, [])
+    };
 
     useEffect(() => {
-        refreshUser()
-    }, [refreshUser])
+        fetchUser();
+    }, []);
 
     return (
-        <UserContext.Provider value={{ user, loading, error, refreshUser, updateUser }}>
+        <UserContext.Provider value={{ user, setUser, loading, refreshUser: fetchUser, updateUser }}>
             {children}
         </UserContext.Provider>
-    )
+    );
 }
 
 export function useUser() {
-    return useContext(UserContext)
+    const context = useContext(UserContext);
+    if (context === undefined) {
+        throw new Error("useUser must be used within a UserProvider");
+    }
+    return context;
 }

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Goal, Plus, Trash2, Home, Car, GraduationCap, Briefcase, Heart, TrendingUp, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
+import { getTranslation } from "@/lib/i18n"
 import { calculateDetailedEligibility } from "@/lib/tools/eligibility-calculator"
 
 type LoanGoal = {
@@ -20,12 +21,13 @@ type LoanGoal = {
 }
 
 const goalTypes = [
-  { id: "home", name: "Home Loan", nameHi: "गृह ऋण", icon: Home, color: "from-blue-500 to-blue-600" },
-  { id: "car", name: "Car Loan", nameHi: "कार ऋण", icon: Car, color: "from-blue-500 to-blue-600" },
+  { id: "home", name: "Home Loan", nameHi: "गृह ऋण", nameMr: "गृह कर्ज", icon: Home, color: "from-blue-500 to-blue-600" },
+  { id: "car", name: "Car Loan", nameHi: "कार ऋण", nameMr: "कार कर्ज", icon: Car, color: "from-blue-500 to-blue-600" },
   {
     id: "education",
     name: "Education Loan",
     nameHi: "शिक्षा ऋण",
+    nameMr: "शिक्षा कर्ज",
     icon: GraduationCap,
     color: "from-purple-500 to-purple-600",
   },
@@ -33,11 +35,18 @@ const goalTypes = [
     id: "business",
     name: "Business Loan",
     nameHi: "व्यापार ऋण",
+    nameMr: "व्यापार कर्ज",
     icon: Briefcase,
     color: "from-orange-500 to-orange-600",
   },
-  { id: "personal", name: "Personal Loan", nameHi: "व्यक्तिगत ऋण", icon: Heart, color: "from-pink-500 to-pink-600" },
+  { id: "personal", name: "Personal Loan", nameHi: "व्यक्तिगत ऋण", nameMr: "वैयक्तिक कर्ज", icon: Heart, color: "from-pink-500 to-pink-600" },
 ]
+
+function getGoalName(goal: typeof goalTypes[0], language: string) {
+  if (language === "mr") return goal.nameMr || goal.name
+  if (language === "hi") return goal.nameHi
+  return goal.name
+}
 
 export default function MultiGoalPlanner() {
   const [goals, setGoals] = useState<LoanGoal[]>([])

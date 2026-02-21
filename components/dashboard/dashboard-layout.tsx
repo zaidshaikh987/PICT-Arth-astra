@@ -23,12 +23,14 @@ import {
   Command,
   PanelLeftClose,
   PanelLeftOpen,
+  Globe,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { UserProvider, useUser } from "@/lib/user-context"
 import NotificationCenter from "@/components/dashboard/notification-center"
 import EducationPolicyBar from "@/components/dashboard/education-policy-bar"
+import { useLanguage } from "@/lib/language-context"
 
 const navigation = [
   {
@@ -67,6 +69,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { user, loading } = useUser()
+  const { language, setLanguage } = useLanguage()
 
   const pathname = usePathname()
 
@@ -250,6 +253,34 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
 
             <NotificationCenter />
+
+            {/* Language Selector */}
+            <div className="relative group">
+              <button className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-100 text-slate-600">
+                <Globe className="w-4 h-4" />
+                <span className="text-xs font-medium uppercase">{language}</span>
+              </button>
+              <div className="absolute right-0 top-full mt-1 py-1 bg-white rounded-lg shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[120px]">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${language === "en" ? "bg-blue-50 text-blue-600 font-medium" : ""}`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => setLanguage("hi")}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${language === "hi" ? "bg-blue-50 text-blue-600 font-medium" : ""}`}
+                >
+                  हिंदी
+                </button>
+                <button
+                  onClick={() => setLanguage("mr")}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${language === "mr" ? "bg-blue-50 text-blue-600 font-medium" : ""}`}
+                >
+                  मराठी
+                </button>
+              </div>
+            </div>
 
             <div className="w-px h-7 bg-slate-200 mx-1 hidden md:block" />
 
