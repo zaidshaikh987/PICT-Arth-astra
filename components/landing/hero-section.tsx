@@ -39,11 +39,7 @@ export default function HeroSection() {
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
-            backgroundSize: "40px 40px",
-          }}
+          className="absolute inset-0 hero-dot-grid"
         />
       </div>
 
@@ -62,8 +58,7 @@ export default function HeroSection() {
               <span className="relative inline-block pt-20 md:pt-24">
                 {/* ArthAstra logo floating above "Smarter" */}
                 <span
-                  className="absolute w-max"
-                  style={{ top: "-35px", left: "25%", transform: "translateX(-50%)" }}
+                  className="absolute w-max hero-logo-position"
                 >
                   <Image
                     src="/arthastra-logo.png"
@@ -160,6 +155,7 @@ export default function HeroSection() {
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(idx)}
+                    aria-label={`Go to image ${idx + 1}`}
                     className={`w-2 h-2 rounded-full transition-all ${idx === currentImage ? "bg-white w-6" : "bg-white/50"
                       }`}
                   />

@@ -44,11 +44,11 @@ export default function PeerInsights() {
           {/* Bell Curve Visual */}
           <div className="relative h-24 mt-2 flex items-end justify-center">
             {/* Simple CSS-based Bell Curve shape */}
-            <div className="w-full h-full bg-gradient-to-t from-blue-100 to-transparent rounded-t-full opacity-50 absolute bottom-0" style={{ clipPath: "polygon(0% 100%, 10% 80%, 30% 30%, 50% 10%, 70% 30%, 90% 80%, 100% 100%)" }}></div>
-            <div className="w-full h-full border-t-2 border-dashed border-blue-200 absolute bottom-0" style={{ clipPath: "polygon(0% 100%, 10% 80%, 30% 30%, 50% 10%, 70% 30%, 90% 80%, 100% 100%)" }}></div>
+            <div className="w-full h-full bg-gradient-to-t from-blue-100 to-transparent rounded-t-full opacity-50 absolute bottom-0 bell-curve-clip"></div>
+            <div className="w-full h-full border-t-2 border-dashed border-blue-200 absolute bottom-0 bell-curve-clip"></div>
 
             {/* User Indicator */}
-            <div className="absolute bottom-0 w-1 h-full flex flex-col items-center justify-end" style={{ left: `${peerData.percentile}%` }}>
+            <div className="absolute bottom-0 w-1 h-full flex flex-col items-center justify-end dynamic-left" ref={(el) => { if (el) el.style.setProperty('--pos-left', `${peerData.percentile}%`); }}>
               <div className="mb-1 px-1.5 py-0.5 bg-blue-600 text-white text-[10px] rounded font-bold shadow-sm whitespace-nowrap -translate-x-1/2">
                 You
               </div>

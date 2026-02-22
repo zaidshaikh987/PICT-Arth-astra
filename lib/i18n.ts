@@ -60,6 +60,7 @@ export const translations = {
     chatbotGreeting: "Hi! I'm ArthAstra Assistant. How can I help you today?",
     typeMessage: "Type a message...",
     askAnything: "Ask me anything about loans",
+    sortOffersBy: "Sort offers by",
   },
   hi: {
     dashboard: "डैशबोर्ड",
@@ -122,6 +123,7 @@ export const translations = {
     chatbotGreeting: "नमस्ते! मैं आर्थास्त्र सहायक हूं। आज मैं आपकी कैसे मदद कर सकता हूं?",
     typeMessage: "संदेश लिखें...",
     askAnything: "ऋण के बारे में कुछ भी पूछें",
+    sortOffersBy: "ऑफ़र इसके अनुसार क्रमबद्ध करें",
   },
   mr: {
     dashboard: "डॅशबोर्ड",
@@ -184,6 +186,7 @@ export const translations = {
     chatbotGreeting: "नमस्कार! मी आर्थास्त्र सहाय्यक आहे. आज मी तुम्हाला कशी मदत करू शकतो?",
     typeMessage: "संदेश टाइप करा...",
     askAnything: "कर्जाबद्दल काहीही विचारा",
+    sortOffersBy: "ऑफर यानुसार क्रमवारी लावा",
   },
 }
 

@@ -276,9 +276,9 @@ export default function DashboardOverview() {
               </div>
               <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${docPercent === 100 ? "bg-emerald-500" : docPercent > 50 ? "bg-blue-500" : "bg-amber-400"
+                  className={`h-full rounded-full transition-all duration-700 dynamic-bar-w ${docPercent === 100 ? "bg-emerald-500" : docPercent > 50 ? "bg-blue-500" : "bg-amber-400"
                     }`}
-                  style={{ width: `${docPercent}%` }}
+                  ref={(el) => { if (el) el.style.setProperty('--bar-w', `${docPercent}%`); }}
                 />
               </div>
             </div>
@@ -314,9 +314,9 @@ export default function DashboardOverview() {
                 </div>
                 <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${f.status === "pass" ? "bg-emerald-500" : f.status === "warning" ? "bg-amber-500" : "bg-red-500"
+                    className={`h-full rounded-full transition-all duration-700 dynamic-bar-w ${f.status === "pass" ? "bg-emerald-500" : f.status === "warning" ? "bg-amber-500" : "bg-red-500"
                       }`}
-                    style={{ width: `${f.score}%` }}
+                    ref={(el) => { if (el) el.style.setProperty('--bar-w', `${f.score}%`); }}
                   />
                 </div>
               </div>

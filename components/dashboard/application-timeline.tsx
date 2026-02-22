@@ -105,7 +105,7 @@ export default function ApplicationTimeline() {
           </div>
           <div className="text-3xl font-bold text-emerald-600 mb-2">{Math.round(progress)}%</div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-600 transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-emerald-600 transition-all duration-500 dynamic-bar-w" data-style-width={`${progress}%`} ref={(el) => { if (el) el.style.setProperty('--bar-w', `${progress}%`); }} />
           </div>
         </Card>
 

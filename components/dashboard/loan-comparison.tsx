@@ -49,7 +49,7 @@ export default function LoanComparison() {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
         <div className="flex flex-wrap gap-2">
-          {["all", "recommended", "premium", "budget"].map((f) => (
+          {(["all", "recommended", "premium", "budget"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -58,7 +58,7 @@ export default function LoanComparison() {
                 : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
                 }`}
             >
-              {getTranslation(language, (f === "all" ? "allOffers" : f) as any)}
+              {getTranslation(language, f === "all" ? "allOffers" : f)}
             </button>
           ))}
         </div>
@@ -67,6 +67,8 @@ export default function LoanComparison() {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
           className="ml-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          aria-label={getTranslation(language, "sortOffersBy")}
+          title={getTranslation(language, "sortOffersBy")}
         >
           <option value="rate">{getTranslation(language, "lowestInterestRate")}</option>
           <option value="emi">{getTranslation(language, "lowestEMI")}</option>

@@ -479,6 +479,7 @@ export default function DocumentChecklist() {
                             className="hidden"
                             accept=".pdf,.jpg,.jpeg,.png"
                             onChange={(e) => handleFileUpload(doc.id, e)}
+                            aria-label={`Upload ${language === "hi" ? doc.nameHi : doc.name}`}
                           />
                           <Button
                             size="sm"
