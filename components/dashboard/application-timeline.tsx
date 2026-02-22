@@ -13,11 +13,11 @@ export default function ApplicationTimeline() {
   const { user } = useUser()
 
   useEffect(() => {
-    const files = localStorage.getItem("uploadedFiles")
-    if (files) {
-      const parsedFiles = JSON.parse(files)
-      setUploadedFiles(parsedFiles)
+    // Read from MongoDB user context — same source as document-checklist (user.uploadedFiles)
+    const parsedFiles: any[] = user?.uploadedFiles || []
+    setUploadedFiles(parsedFiles)
 
+    {
       // Build timeline based on real uploaded documents
       const requiredDocs = ["pan", "aadhaar", "utility", "salary-slip", "bank-statement", "form16"]
       const uploadedDocIds = [...new Set(parsedFiles.map((f: any) => f.docId))]
@@ -61,68 +61,6 @@ export default function ApplicationTimeline() {
           status: stageMap.lender_matching ? "completed" : stageMap.credit_check ? "in-progress" : "pending",
           date: stageMap.lender_matching ? "Completed" : stageMap.credit_check ? "In Progress" : "Pending",
           description: "AI matched you with the best loan offers for your profile",
-          actions: [],
-          cta: !stageMap.lender_matching ? { label: "View Loan Offers", href: "/dashboard/loans" } : undefined,
-        },
-        {
-          stage: "Application Submission",
-          status: appDone ? "completed" : stageMap.lender_matching ? "in-progress" : "pending",
-          date: appDone ? "Submitted" : stageMap.lender_matching ? "Ready to Apply" : "Pending",
-          description: appDone
-            ? `Submitted to HDFC Bank · Ref: ${user?.selectedLoan?.referenceId || "—"}`
-            : "Submit your application to the selected lender",
-          actions: [],
-          cta: !appDone && stageMap.lender_matching ? { label: "Apply Now", href: "/dashboard/apply/hdfc" } : undefined,
-        },
-        {
-          stage: "Approval & Disbursal",
-          status: approvedDone ? "completed" : appDone ? "in-progress" : "pending",
-          date: approvedDone ? "Approved ✓" : appDone ? "Under Review" : "Pending",
-          description: approvedDone
-            ? "Loan approved! Disbursal in 1–2 business days."
-            : "Awaiting final approval from HDFC Bank",
-          actions: [],
-        },
-      ])
-    } else {
-      // Default timeline if no files — still use user context for stage logic
-      const stageMap = computeStageCompletion(user)
-      const appDone = stageMap.application
-      const approvedDone = stageMap.approval
-      setTimeline([
-        {
-          stage: "Profile Setup",
-          status: stageMap.profile ? "completed" : "pending",
-          date: stageMap.profile ? "Completed" : "Pending",
-          description: "Basic information and loan requirements submitted",
-          actions: [],
-        },
-        {
-          stage: "Document Upload",
-          status: "pending",
-          date: "Pending",
-          description: "Upload required documents for verification",
-          actions: [
-            { name: "Income Proof", status: "pending" },
-            { name: "Identity Proof", status: "pending" },
-            { name: "Address Proof", status: "pending" },
-            { name: "Bank Statements", status: "pending" },
-          ],
-          cta: { label: "Upload Documents", href: "/dashboard/documents" },
-        },
-        {
-          stage: "Credit Check",
-          status: "pending",
-          date: "Pending",
-          description: "Soft credit check will be performed",
-          actions: [],
-          cta: { label: "Check Eligibility", href: "/dashboard/eligibility" },
-        },
-        {
-          stage: "Lender Matching",
-          status: stageMap.lender_matching ? "completed" : "pending",
-          date: stageMap.lender_matching ? "Completed" : "Pending",
-          description: "Finding best loan offers based on your profile",
           actions: [],
           cta: !stageMap.lender_matching ? { label: "View Loan Offers", href: "/dashboard/loans" } : undefined,
         },

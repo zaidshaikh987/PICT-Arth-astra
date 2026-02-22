@@ -55,18 +55,19 @@ export const APP_STAGES: AppStage[] = [
  * Returns a map of stageKey → boolean (completed)
  */
 export function computeStageCompletion(user: any): Record<string, boolean> {
-    // ──── Helper: read uploaded docs from localStorage ────
+    // ──── Read uploaded docs from user context (MongoDB) ────
+    // document-checklist saves via updateUser({ uploadedFiles }), not localStorage
     let uploadedDocIds: string[] = []
     try {
-        const raw = typeof window !== "undefined" ? localStorage.getItem("uploadedFiles") : null
-        if (raw) {
-            const files: any[] = JSON.parse(raw)
-            uploadedDocIds = [...new Set(files.map((f) => f.docId as string))]
+        // Primary source: user.uploadedFiles from MongoDB
+        if (user?.uploadedFiles && Array.isArray(user.uploadedFiles)) {
+            uploadedDocIds = [...new Set(user.uploadedFiles.map((f: any) => f.docId as string))]
         }
     } catch { }
 
     const requiredDocs = ["pan", "aadhaar", "utility", "salary-slip", "bank-statement", "form16"]
     const docsComplete = requiredDocs.every((d) => uploadedDocIds.includes(d))
+
 
     // ──── Profile: user must exist and have filled onboarding ────
     const profileComplete = !!(user && (user.phone || user.name) && user.loanPurpose)
