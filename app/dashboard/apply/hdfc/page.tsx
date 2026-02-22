@@ -235,19 +235,78 @@ export default function HDFCApplyPage() {
     const processingFee = Math.round(loanAmount * 0.015)
     const refId = `HDFC-${(form._id || Math.random().toString(36)).substr(2, 8).toUpperCase()}`
 
+    // ── Common loan payload sent to every WhatsApp notification ──
+    const notifyPayload = {
+        name: form.name,
+        phone: form.phone,
+        creditScore: form.creditScore,
+        amount: loanAmount,
+        emi,
+        tenure,
+        refId,
+        bankName: "HDFC Bank",
+        panNumber,
+        aadhaarNumber,
+        loanPurpose: form.loanPurpose,
+    }
+
     async function notify(stage: string) {
         try {
-            await fetch("/api/notify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage, userData: { name: form.name, phone: form.phone, creditScore: form.creditScore, amount: loanAmount.toLocaleString("en-IN") } }) })
-        } catch { }
+            const res = await fetch("/api/notify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ stage, userData: notifyPayload }),
+            })
+            const data = await res.json()
+            if (!data.success) {
+                console.warn(`[HDFC] WhatsApp notify failed for stage '${stage}':`, data.error)
+            } else {
+                console.log(`[HDFC] WhatsApp sent for stage '${stage}'. SID: ${data.sid || "mock"}`)
+            }
+        } catch (err) {
+            console.error(`[HDFC] notify() threw for stage '${stage}':`, err)
+        }
     }
 
     async function handleSubmit() {
         setSubmitting(true)
-        await updateUser({ ...form, selectedLoan: { bankName: "HDFC Bank", productName: "Personal Loan – Premium", rate, emi, tenure, principal: loanAmount, processingFee, referenceId: refId }, timelineSimulation: { ...(form.timelineSimulation || {}), appSubmitStatus: "completed", appSubmittedAt: Date.now(), approvalStatus: "pending" } })
+
+        // ── Step 1: Save application data + send "submitted" WhatsApp ──
+        await updateUser({
+            ...form,
+            panNumber,
+            aadhaarNumber,
+            selectedLoan: {
+                bankName: "HDFC Bank",
+                productName: "Personal Loan – Premium",
+                rate, emi, tenure,
+                principal: loanAmount,
+                processingFee,
+                referenceId: refId,
+            },
+            timelineSimulation: {
+                ...(form.timelineSimulation || {}),
+                appSubmitStatus: "completed",
+                appSubmittedAt: Date.now(),
+                approvalStatus: "pending",
+            },
+        })
         await notify("application_submitted")
+
+        // ── Step 2: Simulate HDFC processing (4s) then auto-approve ──
         await new Promise(res => setTimeout(res, 4000))
-        await updateUser({ timelineSimulation: { ...(form.timelineSimulation || {}), appSubmitStatus: "completed", appSubmittedAt: Date.now(), approvalStatus: "approved", approvedAt: Date.now() } })
+
+        await updateUser({
+            timelineSimulation: {
+                ...(form.timelineSimulation || {}),
+                appSubmitStatus: "completed",
+                appSubmittedAt: Date.now(),
+                approvalStatus: "approved",
+                approvedAt: Date.now(),
+            },
+        })
         await notify("loan_approved")
+
         setSubmitting(false)
         setSubmitted(true)
     }
