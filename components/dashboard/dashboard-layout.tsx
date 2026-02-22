@@ -115,27 +115,23 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className={`px-4 py-4 border-b border-slate-800 flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
-            <Link href="/" className="flex items-center gap-2">
+          <div className={`px-4 py-3 border-b border-slate-800 flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
+            <Link href="/" className="flex items-center">
               {sidebarCollapsed ? (
-                /* collapsed: show just the icon portion */
-                <div className="w-8 h-8 rounded-lg overflow-hidden bg-white flex-shrink-0">
-                  <Image
-                    src="/arthastra-logo.png"
-                    alt="ArthAstra"
-                    width={32}
-                    height={32}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              ) : (
-                /* expanded: show full logo */
                 <Image
                   src="/arthastra-logo.png"
                   alt="ArthAstra"
-                  width={140}
-                  height={48}
-                  className="object-contain h-10 w-auto"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 object-contain"
+                />
+              ) : (
+                <Image
+                  src="/arthastra-logo.png"
+                  alt="ArthAstra"
+                  width={180}
+                  height={60}
+                  className="h-12 w-auto object-contain"
                   priority
                 />
               )}

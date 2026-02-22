@@ -56,19 +56,19 @@ export default function HeroSection() {
             transition={{ duration: 0.8 }}
             className="text-white"
           >
-            {/* Brand Badge */}
+            {/* Brand Logo */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/30"
+              className="mb-6"
             >
               <Image
                 src="/arthastra-logo.png"
                 alt="ArthAstra"
-                width={120}
-                height={40}
-                className="h-9 w-auto object-contain"
+                width={220}
+                height={72}
+                className="h-16 w-auto object-contain drop-shadow-lg"
                 priority
               />
             </motion.div>
