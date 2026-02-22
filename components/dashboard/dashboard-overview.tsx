@@ -65,7 +65,7 @@ function useAnimatedCounter(target: number, duration: number = 1200) {
 
 // ─── Mini DTI Gauge ─────────────────────────────
 function MiniDTIGauge({ dti }: { dti: number }) {
-  const radius = 28
+  const radius = 36
   const circumference = 2 * Math.PI * radius
   const clampedDTI = Math.min(100, Math.max(0, dti))
   const strokeDashoffset = circumference - (clampedDTI / 100) * circumference
@@ -73,22 +73,22 @@ function MiniDTIGauge({ dti }: { dti: number }) {
   const label = dti > 50 ? "High" : dti > 40 ? "Moderate" : "Healthy"
 
   return (
-    <div className="relative flex items-center justify-center w-[60px] h-[60px] flex-shrink-0">
-      <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r={radius} className="fill-none stroke-slate-100" strokeWidth="5" />
+    <div className="relative flex items-center justify-center w-[80px] h-[80px] flex-shrink-0">
+      <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r={radius} className="fill-none stroke-slate-100" strokeWidth="6" />
         <circle
-          cx="32" cy="32" r={radius}
+          cx="40" cy="40" r={radius}
           className="fill-none transition-all duration-1000 ease-out"
           stroke={color}
-          strokeWidth="5"
+          strokeWidth="6"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xs font-bold text-slate-800">{dti.toFixed(0)}%</span>
-        <span className="text-[7px] text-slate-400 font-medium uppercase">{label}</span>
+        <span className="text-sm font-bold text-slate-800">{dti.toFixed(0)}%</span>
+        <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wide">{label}</span>
       </div>
     </div>
   )
@@ -193,27 +193,34 @@ export default function DashboardOverview() {
 
         {/* Card 1: Eligibility + DTI Gauge */}
         <Link href="/dashboard/eligibility" className="block group">
-          <Card className="p-5 h-full border border-slate-100 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-50 rounded-lg">
-                  <Gauge className="w-4 h-4 text-blue-600" />
+          <Card className="p-7 h-full border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-200 group-hover:border-blue-300 group-hover:-translate-y-0.5">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-50 rounded-xl">
+                  <Gauge className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Eligibility</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Eligibility</span>
               </div>
-              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${userData.isEligible ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                {userData.isEligible ? "Eligible" : "Review"}
+              <span className={`px-3 py-1 text-xs font-bold uppercase rounded-full border ${userData.isEligible
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+                }`}>
+                {userData.isEligible ? "✓ Eligible" : "Review"}
               </span>
             </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-[10px] text-slate-400 mb-0.5">Max Loan Amount</p>
-                <div ref={eligibilityCounter.ref} className="text-2xl font-bold text-slate-900">
+
+            {/* Main content */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-slate-400 font-medium mb-1">Max Loan Amount</p>
+                <div ref={eligibilityCounter.ref} className="text-3xl font-black text-slate-900 tracking-tight">
                   {"\u20B9"}{eligibilityCounter.count.toLocaleString("en-IN")}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  EMI Capacity: {"\u20B9"}{(userData.availableForEMI || 0).toLocaleString("en-IN")}/mo
-                </p>
+                <div className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                  <span>EMI cap: <span className="font-semibold text-slate-700">{"\u20B9"}{(userData.availableForEMI || 0).toLocaleString("en-IN")}</span>/mo</span>
+                </div>
               </div>
               <MiniDTIGauge dti={dtiValue} />
             </div>
@@ -222,66 +229,93 @@ export default function DashboardOverview() {
 
         {/* Card 2: Documents — Detailed */}
         <Link href="/dashboard/documents" className="block group">
-          <Card className="p-5 h-full border border-slate-100 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-emerald-50 rounded-lg">
-                  <FileCheck className="w-4 h-4 text-emerald-600" />
+          <Card className="p-7 h-full border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-200 group-hover:border-emerald-300 group-hover:-translate-y-0.5">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-50 rounded-xl">
+                  <FileCheck className="w-5 h-5 text-emerald-600" />
                 </div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Documents</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Documents</span>
               </div>
-              <span className="text-sm font-bold text-slate-700">{uploadedCount}/{requiredDocs.length}</span>
+              <span className={`px-3 py-1 text-sm font-black rounded-full border ${uploadedCount >= requiredDocs.length
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-50 text-slate-600 border-slate-200"
+                }`}>
+                {uploadedCount}/{requiredDocs.length}
+              </span>
             </div>
+
             {/* Document checklist mini */}
-            <div className="space-y-1.5 mb-3">
+            <div className="space-y-3 mb-5">
               {requiredDocs.slice(0, 3).map((doc, i) => {
-                const isUploaded = i < uploadedCount
+                const isUploaded = uploadedFiles.some((f: any) => f.docId === doc.key || i < uploadedCount)
                 return (
-                  <div key={doc.key} className="flex items-center gap-2">
+                  <div key={doc.key} className="flex items-center gap-3">
                     {isUploaded ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 flex-shrink-0" />
+                      <div className="w-4 h-4 rounded-full border-2 border-slate-200 flex-shrink-0" />
                     )}
-                    <span className={`text-xs ${isUploaded ? "text-slate-700" : "text-slate-400"}`}>{doc.name}</span>
+                    <span className={`text-sm font-medium ${isUploaded ? "text-slate-700" : "text-slate-400"
+                      }`}>{doc.name}</span>
+                    {isUploaded && <span className="ml-auto text-xs text-emerald-600 font-semibold">✓</span>}
                   </div>
                 )
               })}
               {requiredDocs.length > 3 && (
-                <p className="text-[10px] text-slate-400 pl-5">+{requiredDocs.length - 3} more</p>
+                <p className="text-xs text-slate-400 pl-7">+{requiredDocs.length - 3} more documents</p>
               )}
             </div>
-            <Progress value={docPercent} className="h-1 bg-slate-100" />
+
+            {/* Progress bar — thicker and labeled */}
+            <div>
+              <div className="flex justify-between text-xs text-slate-500 mb-1.5 font-medium">
+                <span>Progress</span>
+                <span className={docPercent === 100 ? "text-emerald-600 font-bold" : ""}>{docPercent}%</span>
+              </div>
+              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${docPercent === 100 ? "bg-emerald-500" : docPercent > 50 ? "bg-blue-500" : "bg-amber-400"
+                    }`}
+                  style={{ width: `${docPercent}%` }}
+                />
+              </div>
+            </div>
           </Card>
         </Link>
 
-        {/* Card 3: Approval Odds + Risk (replaces empty credit score) */}
-        <Card className="p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-purple-50 rounded-lg">
-                <ShieldCheck className="w-4 h-4 text-purple-600" />
+        {/* Card 3: Approval Odds + Risk */}
+        <Card className="p-7 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-200">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-purple-50 rounded-xl">
+                <ShieldCheck className="w-5 h-5 text-purple-600" />
               </div>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approval Odds</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Approval Odds</span>
             </div>
-            <div ref={oddsCounter.ref} className={`text-lg font-bold ${approvalOdds >= 70 ? "text-emerald-600" : approvalOdds >= 50 ? "text-amber-600" : "text-red-600"}`}>
+            <div ref={oddsCounter.ref} className={`text-2xl font-black ${approvalOdds >= 70 ? "text-emerald-600" : approvalOdds >= 50 ? "text-amber-600" : "text-red-600"
+              }`}>
               {oddsCounter.count}%
             </div>
           </div>
 
-          {/* Factor bars */}
-          <div className="space-y-2">
+          {/* Factor bars — thicker and spaced */}
+          <div className="space-y-3.5">
             {factors.slice(0, 3).map((f: any, i: number) => (
               <div key={i}>
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] text-slate-500">{f.name}</span>
-                  <span className={`text-[10px] font-bold ${f.status === "pass" ? "text-emerald-600" : f.status === "warning" ? "text-amber-600" : "text-red-600"}`}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-slate-600">{f.name}</span>
+                  <span className={`text-xs font-bold ${f.status === "pass" ? "text-emerald-600" : f.status === "warning" ? "text-amber-600" : "text-red-600"
+                    }`}>
                     {f.score}/100
                   </span>
                 </div>
-                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${f.status === "pass" ? "bg-emerald-500" : f.status === "warning" ? "bg-amber-500" : "bg-red-500"}`}
+                    className={`h-full rounded-full transition-all duration-700 ${f.status === "pass" ? "bg-emerald-500" : f.status === "warning" ? "bg-amber-500" : "bg-red-500"
+                      }`}
                     style={{ width: `${f.score}%` }}
                   />
                 </div>
@@ -291,9 +325,14 @@ export default function DashboardOverview() {
 
           {/* Employment Risk Tag */}
           {empRisk && (
-            <div className={`mt-3 flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-md ${empRisk.riskLevel === "Low" ? "bg-emerald-50 text-emerald-700" : empRisk.riskLevel === "Medium" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
-              <AlertCircle className="w-3 h-3" />
-              Employment Risk: {empRisk.riskLevel}
+            <div className={`mt-4 flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border ${empRisk.riskLevel === "Low"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : empRisk.riskLevel === "Medium"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-red-50 text-red-700 border-red-200"
+              }`}>
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              Employment Risk: <strong>{empRisk.riskLevel}</strong>
             </div>
           )}
         </Card>
