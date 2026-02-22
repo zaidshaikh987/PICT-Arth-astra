@@ -117,24 +117,26 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className={`px-3 py-3 border-b border-slate-800 flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
             <Link href="/" className="flex items-center">
-              {sidebarCollapsed ? (
-                <Image
-                  src="/arthastra-logo.png"
-                  alt="ArthAstra"
-                  width={44}
-                  height={44}
-                  className="w-11 h-11 object-contain"
-                />
-              ) : (
-                <Image
-                  src="/arthastra-logo.png"
-                  alt="ArthAstra"
-                  width={200}
-                  height={66}
-                  className="h-14 w-auto object-contain object-left"
-                  priority
-                />
-              )}
+              <span className="relative inline-block" style={{ top: "0px", left: "0px" }}>
+                {sidebarCollapsed ? (
+                  <Image
+                    src="/arthastra-logo.png"
+                    alt="ArthAstra"
+                    width={44}
+                    height={44}
+                    className="w-11 h-11 object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/arthastra-logo.png"
+                    alt="ArthAstra"
+                    width={200}
+                    height={66}
+                    className="h-14 w-auto object-contain object-left"
+                    priority
+                  />
+                )}
+              </span>
             </Link>
             {/* Collapse toggle — desktop only */}
             {!sidebarCollapsed && (
