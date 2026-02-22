@@ -137,13 +137,13 @@ function printApplication(data: Record<string, any>) {
 
 /* ─── editable form field ──────────────────────────────── */
 function EditField({
-    label, value, onChange, type = "text", mono, suffix
+    label, value, onChange, type = "text", mono, suffix, wide
 }: {
     label: string; value: string | number | undefined; onChange: (v: string) => void;
-    type?: string; mono?: boolean; suffix?: string
+    type?: string; mono?: boolean; suffix?: string; wide?: boolean
 }) {
     return (
-        <div className="flex flex-col gap-1">
+        <div className={`flex flex-col gap-1 ${wide ? "col-span-2" : ""}`}>
             <label className="text-[9px] text-gray-500 uppercase tracking-wide font-bold">{label}</label>
             <div className="relative">
                 <input
