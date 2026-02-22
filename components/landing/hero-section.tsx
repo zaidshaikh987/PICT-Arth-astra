@@ -56,22 +56,17 @@ export default function HeroSection() {
             transition={{ duration: 0.8 }}
             className="text-white"
           >
-            {/* Brand Logo */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6"
-            >
+            {/* Brand Logo — above headline */}
+            <div className="mb-4">
               <Image
                 src="/arthastra-logo.png"
                 alt="ArthAstra"
-                width={220}
-                height={72}
-                className="h-16 w-auto object-contain drop-shadow-lg"
+                width={280}
+                height={92}
+                className="h-24 w-auto object-contain object-left"
                 priority
               />
-            </motion.div>
+            </div>
 
             {/* Main Headline - Updated tagline */}
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
