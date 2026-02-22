@@ -162,3 +162,11 @@
 .dynamic-left {
   left: var(--pos-left, 0%);
 }
+
+/* ai-guardian: bounce animation delays */
+.bounce-delay-150 {
+  animation-delay: 150ms;
+}
+.bounce-delay-300 {
+  animation-delay: 300ms;
+}

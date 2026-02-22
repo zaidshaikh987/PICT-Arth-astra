@@ -225,6 +225,7 @@ export default function AiGuardian() {
                                 </div>
                                 <button
                                     onClick={() => setIsOpen(false)}
+                                    aria-label="Close guardian panel"
                                     className="ml-auto p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
                                 >
                                     <X className="w-5 h-5 text-gray-500" />
@@ -259,9 +260,9 @@ export default function AiGuardian() {
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             {isListening ? (
                                                 <div className="flex gap-1">
-                                                    <span className="w-1 h-3 bg-indigo-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                                                    <span className="w-1 h-5 bg-purple-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                                                    <span className="w-1 h-3 bg-pink-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                                    <span className="w-1 h-3 bg-indigo-500 animate-bounce" />
+                                                    <span className="w-1 h-5 bg-purple-500 animate-bounce bounce-delay-150" />
+                                                    <span className="w-1 h-3 bg-pink-500 animate-bounce bounce-delay-300" />
                                                 </div>
                                             ) : (
                                                 <Search className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />

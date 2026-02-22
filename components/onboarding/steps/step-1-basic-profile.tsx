@@ -16,6 +16,23 @@ interface Props {
   onNext: () => void
 }
 
+// Indian states/regions → most spoken language
+const REGION_LANGUAGE_MAP: Record<string, string> = {
+  maharashtra: "mr", goa: "mr",
+  "uttar pradesh": "hi", "madhya pradesh": "hi", rajasthan: "hi",
+  bihar: "hi", jharkhand: "hi", chhattisgarh: "hi", haryana: "hi",
+  "himachal pradesh": "hi", uttarakhand: "hi", delhi: "hi",
+  "new delhi": "hi", chandigarh: "hi",
+}
+
+function detectLangFromRegion(region: string): string {
+  const r = (region || "").toLowerCase()
+  for (const [key, lang] of Object.entries(REGION_LANGUAGE_MAP)) {
+    if (r.includes(key)) return lang
+  }
+  return "en"
+}
+
 export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isDetecting, setIsDetecting] = useState(false)
@@ -25,8 +42,6 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
     if (!code) return ""
     if (code === "hi") return "Hindi"
     if (code === "mr") return "Marathi"
-    if (code === "ta") return "Tamil"
-    if (code === "bn") return "Bengali"
     if (code === "en") return "English"
     return code
   }
@@ -50,97 +65,76 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
   }
 
   useEffect(() => {
-    try {
-      if (typeof window === "undefined") return
-      const payload: Partial<OnboardingData> = {}
-      const storedCity = localStorage.getItem("detectedCity") || ""
-      const storedRegion = localStorage.getItem("detectedRegion") || ""
-      const storedLanguage = (localStorage.getItem("language") || "") as string
+    if (typeof window === "undefined") return
 
-      if (!data.city && storedCity) {
-        payload.city = storedCity
-      }
-      if (!data.state && storedRegion) {
-        payload.state = storedRegion
-      }
-      if (!data.language && storedLanguage) {
-        payload.language = storedLanguage as any
-      }
-
-      if (Object.keys(payload).length > 0) {
-        updateData(payload)
-      }
-    } catch {
-    }
-  }, [])
-
-  useEffect(() => {
-    const shouldDetect = !data.language || !data.city || !data.state
-
-    if (!shouldDetect) {
-      return
-    }
-
+    // Always do a fresh IP detection for accurate city/state/language
     const detect = async () => {
+      setIsDetecting(true)
+      setDetectFailed(false)
+
+      let city = ""
+      let region = ""
+      let lang = "en"
+
+      // Try primary API: ipapi.co
       try {
-        if (typeof window === "undefined") return
-        setIsDetecting(true)
-        setDetectFailed(false)
-
-        const res = await fetch("https://ipapi.co/json/")
-        if (!res.ok) {
-          setIsDetecting(false)
-          setDetectFailed(true)
-          return
+        const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) })
+        if (res.ok) {
+          const json = await res.json()
+          city = json.city || ""
+          region = json.region || ""
         }
+      } catch { /* try fallback */ }
 
-        const json = await res.json()
-        const payload: Partial<OnboardingData> = {}
-
-        const cityFromIp = (json as any).city as string | undefined
-        const regionFromIp = (json as any).region as string | undefined
-
-        if (!data.city && (json as any).city) {
-          payload.city = cityFromIp
-        }
-        if (!data.state && (json as any).region) {
-          payload.state = regionFromIp
-        }
-
-        if (!data.language) {
-          const langsRaw = ((json as any).languages as string | undefined) || ""
-          const langs = langsRaw.toLowerCase()
-          const regionLower = (regionFromIp || "").toLowerCase()
-
-          let lang = "en"
-
-          if (regionLower.includes("maharashtra")) {
-            lang = "mr"
-          } else if (langs.includes("hi")) {
-            lang = "hi"
-          } else if (langs.includes("mr")) {
-            lang = "mr"
-          } else if (langs.includes("ta")) {
-            lang = "ta"
-          } else if (langs.includes("bn")) {
-            lang = "bn"
+      // Fallback: ip-api.com
+      if (!region) {
+        try {
+          const res = await fetch("http://ip-api.com/json/?fields=regionName,city", { signal: AbortSignal.timeout(5000) })
+          if (res.ok) {
+            const json = await res.json()
+            city = json.city || ""
+            region = json.regionName || ""
           }
+        } catch { /* detection failed */ }
+      }
 
-          payload.language = lang
-        }
+      if (region) {
+        lang = detectLangFromRegion(region)
+        const payload: Partial<OnboardingData> = {}
+        if (city) payload.city = city
+        if (region) payload.state = region
+        payload.language = lang
+        updateData(payload)
 
-        if (Object.keys(payload).length > 0) {
-          updateData(payload)
-        }
+        // Update localStorage cache for language-context too
+        try {
+          if (city) localStorage.setItem("detectedCity", city)
+          if (region) localStorage.setItem("detectedRegion", region)
+          localStorage.setItem("lang_detect_cache", JSON.stringify({ language: lang, city, region, ts: Date.now() }))
+        } catch { /* ignore */ }
+
         setIsDetecting(false)
-      } catch {
+      } else {
+        // No region detected — fall back to localStorage cache
+        try {
+          const cached = localStorage.getItem("lang_detect_cache")
+          if (cached) {
+            const obj = JSON.parse(cached)
+            const payload: Partial<OnboardingData> = {}
+            if (obj.city && !data.city) payload.city = obj.city
+            if (obj.region && !data.state) payload.state = obj.region
+            if (obj.language && !data.language) payload.language = obj.language
+            if (Object.keys(payload).length > 0) updateData(payload)
+          }
+        } catch { /* ignore */ }
         setIsDetecting(false)
         setDetectFailed(true)
       }
     }
 
     detect()
-  }, [data.city, data.state, data.language, updateData])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <Card className="p-8 shadow-xl border-2 border-blue-100">
@@ -152,7 +146,10 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
         )}
         {!isDetecting && (data.city || data.state || data.language) && (
           <p className="text-xs text-blue-700 mt-2">
-            We detected {data.city || data.state ? `${data.city || ""}${data.city && data.state ? ", " : ""}${!data.city && data.state ? data.state : ""}` : "your location"}
+            We detected{" "}
+            {data.city && data.state
+              ? `${data.city}, ${data.state}`
+              : data.city || data.state || "your location"}
             {data.language && ` • Most spoken language here: ${getLanguageLabel(data.language)}`}
           </p>
         )}
@@ -183,8 +180,7 @@ export default function Step1BasicProfile({ data, updateData, onNext }: Props) {
                   <>
                     {data.city}
                     {data.city && data.state && ", "}
-                    {!data.city && data.state}
-                    {data.city && !data.state && ""}
+                    {data.state}
                   </>
                 )}
                 {data.language && (

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, MicOff, X, Globe, Volume2, VolumeX, Sparkles } from "lucide-react"
+import { Mic, MicOff, X, Volume2, VolumeX, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
 import { useVoiceAssistant } from "@/lib/voice-assistant-context"
@@ -21,7 +21,6 @@ export default function VoiceAssistantButton() {
     currentFieldIndex,
     chatMessages,
     isOpen,
-    setLanguage,
     setVoiceEnabled,
     startListening,
     stopListening,
@@ -150,14 +149,6 @@ export default function VoiceAssistantButton() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setLanguage(language === "en" ? "hi" : "en")}
-                    className="text-white hover:bg-white/20 h-8 w-8"
-                  >
-                    <Globe className="w-4 h-4" />
-                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"

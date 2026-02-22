@@ -69,63 +69,77 @@ interface VoiceAssistantContextType {
 const VoiceAssistantContext = createContext<VoiceAssistantContextType | undefined>(undefined)
 
 const navigationCommands: Record<string, { paths: string[]; keywords: { en: string[]; hi: string[] } }> = {
-  dashboard: {
-    paths: ["/dashboard"],
-    keywords: { en: ["dashboard", "home", "main", "overview"], hi: ["डैशबोर्ड", "होम", "मुख्य"] },
-  },
   eligibility: {
     paths: ["/dashboard/eligibility"],
-    keywords: { en: ["eligibility", "check eligibility", "eligibility report"], hi: ["पात्रता", "योग्यता"] },
+    keywords: { en: ["eligibility", "check eligibility", "eligibility report", "am i eligible"], hi: ["पात्रता", "योग्यता"] },
   },
   loans: {
     paths: ["/dashboard/loans"],
-    keywords: { en: ["loans", "loan comparison", "compare loans", "loan options", "find loan", "best loan"], hi: ["ऋण", "लोन", "तुलना", "सर्वोत्तम ऋण"] },
+    keywords: { en: ["loans", "loan comparison", "compare loans", "loan options", "find loan", "best loan", "lender"], hi: ["ऋण", "लोन", "तुलना", "सर्वोत्तम ऋण"] },
   },
   optimizer: {
     paths: ["/dashboard/optimizer"],
-    keywords: { en: ["optimizer", "credit optimizer", "credit path", "improve score", "fix credit"], hi: ["ऑप्टिमाइज़र", "क्रेडिट", "स्कोर सुधारें"] },
+    keywords: { en: ["optimizer", "credit optimizer", "credit path", "improve score", "fix credit", "credit score"], hi: ["ऑप्टिमाइज़र", "क्रेडिट", "स्कोर सुधारें"] },
   },
   timeline: {
     paths: ["/dashboard/timeline"],
     keywords: {
-      en: ["timeline", "application timeline", "track application", "my application", "status", "application"],
-      hi: ["टाइमलाइन", "आवेदन", "स्थिति", "मेरा आवेदन"],
+      en: ["timeline", "application timeline", "track application", "my application", "application status"],
+      hi: ["टाइमलाइन", "आवेदन स्थिति", "मेरा आवेदन"],
     },
   },
   documents: {
     paths: ["/dashboard/documents"],
-    keywords: { en: ["documents", "document checklist", "upload documents", "checklist"], hi: ["दस्तावेज़", "डॉक्युमेंट", "चेकलिस्ट"] },
+    keywords: { en: ["documents", "document checklist", "upload documents", "checklist", "upload"], hi: ["दस्तावेज़", "डॉक्युमेंट", "चेकलिस्ट", "अपलोड"] },
   },
   rejection: {
     paths: ["/dashboard/rejection-recovery"],
-    keywords: { en: ["rejection", "recovery", "rejection recovery", "help me"], hi: ["अस्वीकृति", "मदद"] },
+    keywords: { en: ["rejection", "recovery", "rejection recovery", "rejected", "why rejected"], hi: ["अस्वीकृति", "रिकवरी", "अस्वीकार"] },
   },
   onboarding: {
     paths: ["/onboarding"],
     keywords: {
-      en: ["onboarding", "start application", "apply", "new application", "fill form"],
-      hi: ["आवेदन", "नया", "फॉर्म भरो"],
+      en: ["onboarding", "start application", "apply", "new application", "fill form", "get started"],
+      hi: ["आवेदन", "नया आवेदन", "फॉर्म भरो", "शुरू करें"],
     },
   },
   settings: {
     paths: ["/dashboard/settings"],
-    keywords: { en: ["settings", "profile", "account"], hi: ["सेटिंग्स", "प्रोफाइल", "खाता"] },
+    keywords: { en: ["settings", "profile", "account", "preferences"], hi: ["सेटिंग्स", "प्रोफाइल", "खाता"] },
   },
   learn: {
     paths: ["/dashboard/learn"],
-    keywords: { en: ["learn", "learning center", "knowledge", "tutorials"], hi: ["सीखें", "ज्ञान", "ट्यूटोरियल"] },
+    keywords: { en: ["learn", "learning center", "knowledge", "tutorials", "education", "modules"], hi: ["सीखें", "ज्ञान", "ट्यूटोरियल", "शिक्षा"] },
   },
   quiz: {
     paths: ["/dashboard/quiz"],
-    keywords: { en: ["quiz", "test", "financial quiz", "exam"], hi: ["क्विज़", "परीक्षा", "टेस्ट"] },
+    keywords: { en: ["quiz", "test", "financial quiz", "exam", "assessment"], hi: ["क्विज़", "परीक्षा", "टेस्ट"] },
   },
   multigoal: {
     paths: ["/dashboard/multi-goal"],
-    keywords: { en: ["multi-goal", "planner", "goal planner", "future plan", "goals"], hi: ["लक्ष्य", "प्लानर", "भविष्य"] },
+    keywords: { en: ["multi-goal", "planner", "goal planner", "future plan", "goals", "planning"], hi: ["लक्ष्य", "प्लानर", "भविष्य", "योजना"] },
   },
   peers: {
     paths: ["/dashboard/peers"],
-    keywords: { en: ["peers", "community", "insights", "peer insights", "others"], hi: ["समुदाय", "साथी", "इनसाइट्स"] },
+    keywords: { en: ["peers", "community", "insights", "peer insights", "others", "compare with others"], hi: ["समुदाय", "साथी", "इनसाइट्स"] },
+  },
+  chat: {
+    paths: ["/dashboard/chat"],
+    keywords: { en: ["chat", "ai chat", "assistant", "talk", "ask question", "ai assistant"], hi: ["चैट", "बातचीत", "सहायक", "सवाल पूछें"] },
+  },
+  applyLoan: {
+    paths: ["/dashboard/apply"],
+    keywords: { en: ["apply loan", "apply now", "submit application", "apply for loan"], hi: ["आवेदन करें", "अभी आवेदन", "लोन के लिए आवेदन"] },
+  },
+  login: {
+    paths: ["/login"],
+    keywords: { en: ["login", "sign in", "log in"], hi: ["लॉगइन", "साइन इन"] },
+  },
+  // "dashboard" must be LAST — it has generic keywords like "home"/"main"
+  // that could shadow more specific routes if checked first.
+  dashboard: {
+    paths: ["/dashboard"],
+    keywords: { en: ["dashboard", "home", "main", "overview"], hi: ["डैशबोर्ड", "होम", "मुख्य"] },
   },
 }
 
@@ -179,6 +193,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const registeredFieldsRef = useRef<FormField[]>([])
   const isRecognitionActiveRef = useRef(false)
   const processVoiceInputRef = useRef<((input: string) => Promise<void>) | null>(null)
+  // Guard: prevents double-processing when Web Speech API already handled navigation
+  const hasProcessedCurrentInputRef = useRef(false)
   // Guard: only auto-listen after speaking a QUESTION, not after errors/hints/completion
   const shouldAutoListenRef = useRef(false)
 
@@ -215,6 +231,12 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
 
   // Gemini-based transcription using MediaRecorder
   const transcribeWithGemini = useCallback(async (audioBlob: Blob) => {
+    // Skip if already processed by Web Speech API (e.g. navigation commands)
+    if (hasProcessedCurrentInputRef.current) {
+      setIsListening(false)
+      isRecognitionActiveRef.current = false
+      return
+    }
     try {
       // Convert blob to base64
       const reader = new FileReader()
@@ -271,9 +293,11 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
     setIsListening(true)
     setTranscript("")
     isRecognitionActiveRef.current = true
+    hasProcessedCurrentInputRef.current = false
 
-    // 1. Start Gemini Recorder (for Accuracy)
-    if (useGeminiRef.current && typeof navigator !== "undefined" && navigator.mediaDevices) {
+    // 1. Start Gemini Recorder (ONLY in form mode for accuracy)
+    // In navigation mode, SpeechRecognition needs exclusive mic access on Windows
+    if (useGeminiRef.current && isFormModeRef.current && typeof navigator !== "undefined" && navigator.mediaDevices) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
@@ -506,22 +530,62 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         return
       }
 
+      // ── Helper: navigate and clean up mic ──
+      const doNavigate = async (key: string, path: string) => {
+        const msg = language === "en" ? `Opening ${key}...` : `${key} खोल रहे हैं...`
+        addChatMessage({ role: "assistant", content: msg, type: "navigation" })
+        // Stop mic before navigating to avoid stale listeners on new page
+        if (recognitionRef.current) {
+          try { recognitionRef.current.stop() } catch (e) { }
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          try { mediaRecorderRef.current.stop() } catch (e) { }
+        }
+        isRecognitionActiveRef.current = false
+        setIsListening(false)
+        // Speak and navigate (don't await speak — navigate immediately)
+        speak(msg)
+        router.push(path)
+      }
+
+      // ── Navigation: explicit prefix commands ──
+      // e.g. "go to eligibility", "open loans", "navigate to settings"
       if (
         lowerInput.includes("go to") ||
         lowerInput.includes("open") ||
         lowerInput.includes("navigate") ||
         lowerInput.includes("show") ||
+        lowerInput.includes("take me") ||
+        lowerInput.includes("switch to") ||
         lowerInput.includes("जाओ") ||
-        lowerInput.includes("खोलो")
+        lowerInput.includes("खोलो") ||
+        lowerInput.includes("दिखाओ")
       ) {
         for (const [key, cmd] of Object.entries(navigationCommands)) {
           const keywords = [...cmd.keywords.en, ...cmd.keywords.hi]
           if (keywords.some((kw) => lowerInput.includes(kw.toLowerCase()))) {
-            const path = cmd.paths[0]
-            const msg = language === "en" ? `Opening ${key}...` : `${key} खोल रहे हैं...`
-            addChatMessage({ role: "assistant", content: msg, type: "navigation" })
-            await speak(msg)
-            router.push(path)
+            await doNavigate(key, cmd.paths[0])
+            return
+          }
+        }
+      }
+
+      // ── Navigation: keyword-only fallback (no prefix required) ──
+      // If user just says "eligibility" or "loans", still navigate.
+      // Check longer keywords first to avoid "dashboard" shadowing specific routes.
+      if (!isFormMode) {
+        for (const [key, cmd] of Object.entries(navigationCommands)) {
+          const keywords = [...cmd.keywords.en, ...cmd.keywords.hi]
+          if (keywords.some((kw) => kw.toLowerCase().split(" ").length > 1 && lowerInput.includes(kw.toLowerCase()))) {
+            await doNavigate(key, cmd.paths[0])
+            return
+          }
+        }
+        // Then try single-word keyword matches
+        for (const [key, cmd] of Object.entries(navigationCommands)) {
+          const keywords = [...cmd.keywords.en, ...cmd.keywords.hi]
+          if (keywords.some((kw) => lowerInput.includes(kw.toLowerCase()))) {
+            await doNavigate(key, cmd.paths[0])
             return
           }
         }
@@ -788,6 +852,9 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         }
       }
 
+      // Debounce timer for interim transcript fallback
+      let interimDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
       recognition.onresult = (event: any) => {
         let interimTranscript = ""
         let finalTranscript = ""
@@ -803,12 +870,34 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
         const currentTranscript = finalTranscript || interimTranscript
         if (currentTranscript) {
           setTranscript(currentTranscript)
+        }
 
-          // Only process IF Gemini is NOT enabled (Gemini handles its own final processing)
-          // OR if it's a final result and Gemini is taking too long
-          if (!useGeminiRef.current && finalTranscript && processVoiceInputRef.current) {
-            processVoiceInputRef.current(finalTranscript)
+        // Clear any pending interim debounce
+        if (interimDebounceTimer) {
+          clearTimeout(interimDebounceTimer)
+          interimDebounceTimer = null
+        }
+
+        // FINAL transcript — process immediately
+        if (finalTranscript && processVoiceInputRef.current && !hasProcessedCurrentInputRef.current) {
+          hasProcessedCurrentInputRef.current = true
+          // Stop MediaRecorder if running (form mode) to avoid double-processing
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            try { mediaRecorderRef.current.stop() } catch (e) { }
           }
+          processVoiceInputRef.current(finalTranscript)
+          return
+        }
+
+        // INTERIM fallback — if no final result within 2s of stable interim, process it anyway
+        if (interimTranscript && !hasProcessedCurrentInputRef.current && !isFormModeRef.current) {
+          const stableTranscript = interimTranscript
+          interimDebounceTimer = setTimeout(() => {
+            if (!hasProcessedCurrentInputRef.current && processVoiceInputRef.current && stableTranscript) {
+              hasProcessedCurrentInputRef.current = true
+              processVoiceInputRef.current(stableTranscript)
+            }
+          }, 2000)
         }
       }
 
