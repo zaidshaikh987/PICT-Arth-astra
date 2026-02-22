@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowRight, Shield, Zap, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 import Link from "next/link"
 
 const heroImages = [
@@ -62,8 +63,14 @@ export default function HeroSection() {
               transition={{ delay: 0.2 }}
               className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/30"
             >
-              <span className="text-2xl">💰</span>
-              <span className="text-3xl font-bold text-card tracking-normal">ArthAstra  </span>
+              <Image
+                src="/arthastra-logo.png"
+                alt="ArthAstra"
+                width={120}
+                height={40}
+                className="h-9 w-auto object-contain"
+                priority
+              />
             </motion.div>
 
             {/* Main Headline - Updated tagline */}

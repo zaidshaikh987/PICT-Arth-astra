@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -115,15 +116,28 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className={`px-4 py-4 border-b border-slate-800 flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
-                <Command className="w-4 h-4 text-white" />
-              </div>
-              {!sidebarCollapsed && (
-                <div>
-                  <span className="text-sm font-bold text-white tracking-tight">ArthAstra</span>
-                  <span className="block text-[9px] text-indigo-400 font-medium -mt-0.5">Financial Intelligence</span>
+            <Link href="/" className="flex items-center gap-2">
+              {sidebarCollapsed ? (
+                /* collapsed: show just the icon portion */
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-white flex-shrink-0">
+                  <Image
+                    src="/arthastra-logo.png"
+                    alt="ArthAstra"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
+              ) : (
+                /* expanded: show full logo */
+                <Image
+                  src="/arthastra-logo.png"
+                  alt="ArthAstra"
+                  width={140}
+                  height={48}
+                  className="object-contain h-10 w-auto"
+                  priority
+                />
               )}
             </Link>
             {/* Collapse toggle — desktop only */}
