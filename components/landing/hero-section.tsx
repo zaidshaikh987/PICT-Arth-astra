@@ -61,13 +61,16 @@ export default function HeroSection() {
               Borrow{" "}
               <span className="relative inline-block pt-20 md:pt-24">
                 {/* ArthAstra logo floating above "Smarter" */}
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-max">
+                <span
+                  className="absolute w-max"
+                  style={{ top: "-6px", left: "45%", transform: "translateX(-50%)" }}
+                >
                   <Image
                     src="/arthastra-logo.png"
                     alt="ArthAstra"
                     width={280}
                     height={92}
-                    className="h-16 md:h-20 w-auto object-contain drop-shadow-lg"
+                    className="h-16 md:h-40 w-auto object-contain drop-shadow-lg"
                     priority
                   />
                 </span>
