@@ -63,7 +63,7 @@ export default function HeroSection() {
                 {/* ArthAstra logo floating above "Smarter" */}
                 <span
                   className="absolute w-max"
-                  style={{ top: "-6px", left: "45%", transform: "translateX(-50%)" }}
+                  style={{ top: "-35px", left: "25%", transform: "translateX(-50%)" }}
                 >
                   <Image
                     src="/arthastra-logo.png"

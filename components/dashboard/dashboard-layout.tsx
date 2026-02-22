@@ -117,7 +117,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className={`px-3 py-3 border-b border-slate-800 flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
             <Link href="/" className="flex items-center">
-              <span className="relative inline-block" style={{ top: "0px", left: "0px" }}>
+              <span className="relative inline-block" style={{ top: "0px", left: "50px" }}>
                 {sidebarCollapsed ? (
                   <Image
                     src="/arthastra-logo.png"

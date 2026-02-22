@@ -38,6 +38,41 @@ export default function GlobalChatbot() {
     }
   }, [isOpen, language, messages.length])
 
+  useEffect(() => {
+    if (language !== "mr") return
+    if (typeof window === "undefined" || typeof document === "undefined") return
+
+    document.cookie = "googtrans=/en/mr; path=/"
+
+    const existingScript = document.getElementById("google_translate_script")
+    if (!existingScript) {
+      const w = window as any
+      w.googleTranslateElementInit = () => {
+        if (!w.google || !w.google.translate) return
+        let container = document.getElementById("google_translate_element")
+        if (!container) {
+          container = document.createElement("div")
+          container.id = "google_translate_element"
+          container.style.display = "none"
+          document.body.appendChild(container)
+        }
+        new w.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: "mr",
+            autoDisplay: false,
+          },
+          "google_translate_element",
+        )
+      }
+
+      const script = document.createElement("script")
+      script.id = "google_translate_script"
+      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+      document.body.appendChild(script)
+    }
+  }, [language])
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
 

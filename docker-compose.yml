@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────
+#  ArthAstra — Docker Compose
+#  Usage:
+#    docker compose --env-file .env.local up --build   # build & start
+#    docker compose --env-file .env.local up -d        # detached
+#    docker compose down                               # stop
+# ─────────────────────────────────────────────────────────
+
+services:
+  arthastra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Pass secrets into the builder stage for SSR pages
+      args:
+        MONGODB_URI: ${MONGODB_URI}
+        GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY}
+        TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+        TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+
+    image: arthastra:latest
+    container_name: arthastra-app
+
+    ports:
+      - "3000:3000"
+
+    # Runtime environment variables
+    # env_file injects all vars from .env.local into the container at runtime.
+    # The environment block below adds any extra vars not in .env.local.
+    env_file:
+      - .env.local
+
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
