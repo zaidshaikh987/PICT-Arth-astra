@@ -56,29 +56,30 @@ export default function HeroSection() {
             transition={{ duration: 0.8 }}
             className="text-white"
           >
-            {/* Brand Logo — above headline */}
-            <div className="mb-4">
-              <Image
-                src="/arthastra-logo.png"
-                alt="ArthAstra"
-                width={280}
-                height={92}
-                className="h-24 w-auto object-contain object-left"
-                priority
-              />
-            </div>
-
-            {/* Main Headline - Updated tagline */}
+            {/* Main Headline - Logo sits directly above "Smarter" */}
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Borrow{" "}
-              <span className="text-yellow-300 relative">
-                Smarter
-                <motion.div
-                  className="absolute -bottom-1 left-0 right-0 h-1 bg-yellow-300 rounded-full"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.8, duration: 0.6 }}
-                />
+              <span className="relative inline-block pt-20 md:pt-24">
+                {/* ArthAstra logo floating above "Smarter" */}
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-max">
+                  <Image
+                    src="/arthastra-logo.png"
+                    alt="ArthAstra"
+                    width={280}
+                    height={92}
+                    className="h-16 md:h-20 w-auto object-contain drop-shadow-lg"
+                    priority
+                  />
+                </span>
+                <span className="text-yellow-300 relative">
+                  Smarter
+                  <motion.div
+                    className="absolute -bottom-1 left-0 right-0 h-1 bg-yellow-300 rounded-full"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.8, duration: 0.6 }}
+                  />
+                </span>
               </span>
               , Not Harder
             </h1>
